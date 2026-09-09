@@ -23,3 +23,9 @@ Thumbs.db
 
 # Build output
 out/
+
+# Local H2 database files
+data/
+**/data/
+*.mv.db
+*.trace.db
