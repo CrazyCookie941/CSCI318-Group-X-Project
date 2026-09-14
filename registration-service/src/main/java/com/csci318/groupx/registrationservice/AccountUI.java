@@ -4,15 +4,8 @@ import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 //displays the user's profile details and account fields
@@ -22,65 +15,137 @@ public class AccountUI extends Application
     @Override
     public void start(Stage stage)
     {
-        //build the shared navigation bar at the top of the profile page
-        Button homeButton = createNavigationButton("Home");
-        Button eventsButton = createNavigationButton("My events");
-        Button accountButton = createNavigationButton("Account");
+        // 1. Root Layout Container
+        BorderPane layout = new BorderPane();
+        layout.setStyle("-fx-background-color: #fafafa;");
+
+        // 2. Styled Top Navigation Bar
+        HBox navigationBar = new HBox();
+        navigationBar.setPadding(new Insets(12, 24, 12, 24));
+        navigationBar.setSpacing(20);
+        navigationBar.setAlignment(Pos.CENTER_LEFT);
+        navigationBar.setStyle("-fx-background-color: #1a1a1a;");
+
+        Hyperlink homeLink = createNavigationLink("Home");
+        Hyperlink eventsLink = createNavigationLink("My events");
+        Hyperlink accountLink = createNavigationLink("Account");
 
         Region spacer = new Region();
-        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        HBox navigationBar = new HBox(30, homeButton, eventsButton, spacer, accountButton);
-        navigationBar.setAlignment(Pos.CENTER_LEFT);
-        navigationBar.setPadding(new Insets(10, 14, 10, 14));
-        navigationBar.setStyle("-fx-background-color: black;");
+        navigationBar.getChildren().addAll(homeLink, eventsLink, spacer, accountLink);
+        layout.setTop(navigationBar);
+
+        // 3. Central Content Split Frame (Form Left, Image Right)
+        HBox mainContent = new HBox(50);
+        mainContent.setPadding(new Insets(35, 45, 35, 45));
+        mainContent.setAlignment(Pos.TOP_CENTER);
+
+        // --- LEFT COLUMN: Profile Account Information ---
+        VBox leftColumn = new VBox(25);
+        leftColumn.setMinWidth(420);
 
         Label title = new Label("Account profile");
-        title.setStyle("-fx-font-size: 24px; -fx-text-fill: black;");
+        title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #222222;");
 
-        GridPane profile = new GridPane();
-        profile.setHgap(8);
-        profile.setVgap(17);
-        profile.setPadding(new Insets(0, 0, 0, 3));
+        GridPane profileGrid = new GridPane();
+        profileGrid.setHgap(20);
+        profileGrid.setVgap(18);
+        profileGrid.setAlignment(Pos.TOP_LEFT);
 
-        //add the profile fields in the order shown to the user
-        addField(profile, 0, "Username:", new TextField());
-        addField(profile, 1, "Location:", new TextField());
-        addField(profile, 2, "Email:", new TextField());
-        addField(profile, 3, "Password:", new PasswordField());
+        ColumnConstraints labelColumn = new ColumnConstraints(120);
+        ColumnConstraints fieldColumn = new ColumnConstraints(280);
+        profileGrid.getColumnConstraints().addAll(labelColumn, fieldColumn);
 
-        VBox content = new VBox(7, title, profile);
-        content.setPadding(new Insets(15, 0, 0, 2));
+        // Add core informational fields
+        addField(profileGrid, 0, "Username:", new TextField(), "Enter your username");
+        addField(profileGrid, 1, "Location:", new TextField(), "e.g. Sydney, Australia");
+        addField(profileGrid, 2, "Email:", new TextField(), "your.email@example.com");
 
-        //combine the navigation bar and profile form in the page layout
-        BorderPane layout = new BorderPane();
-        layout.setTop(navigationBar);
-        layout.setCenter(content);
-        layout.setPadding(new Insets(27, 16, 20, 16));
-        layout.setStyle("-fx-background-color: #d9d9d9;");
+        // Integrated Password Field with Change Option
+        Label lblPassword = new Label("Password:");
+        lblPassword.setStyle("-fx-font-size: 14px; -fx-text-fill: #666666; -fx-font-weight: bold;");
 
+        HBox passwordFieldBox = new HBox(10);
+        passwordFieldBox.setAlignment(Pos.CENTER_LEFT);
+
+        PasswordField txtPassword = new PasswordField();
+        txtPassword.setText("••••••••••••");
+        txtPassword.setEditable(false);
+        txtPassword.setPrefHeight(32);
+        txtPassword.setStyle("-fx-background-color: #ededed; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 10; -fx-text-fill: #777777;");
+        HBox.setHgrow(txtPassword, Priority.ALWAYS);
+
+        Button btnChangePassword = new Button("Change...");
+        btnChangePassword.setStyle("-fx-background-color: transparent; -fx-text-fill: #007bc4; -fx-border-color: #007bc4; -fx-border-radius: 4; -fx-height: 32; -fx-font-weight: bold; -fx-cursor: hand;");
+
+        passwordFieldBox.getChildren().addAll(txtPassword, btnChangePassword);
+
+        profileGrid.add(lblPassword, 0, 3);
+        profileGrid.add(passwordFieldBox, 1, 3);
+
+        // Footer Action Trigger Elements
+        HBox actionButtons = new HBox(15);
+        Button btnSave = new Button("Save Changes");
+        btnSave.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 24 10 24; -fx-background-radius: 4; -fx-cursor: hand;");
+
+        Button btnCancel = new Button("Cancel");
+        btnCancel.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 10 24 10 24; -fx-cursor: hand;");
+
+        actionButtons.getChildren().addAll(btnSave, btnCancel);
+        leftColumn.getChildren().addAll(title, profileGrid, actionButtons);
+
+        // --- RIGHT COLUMN: Profile Picture Slot Area ---
+        VBox rightColumn = new VBox(12);
+        rightColumn.setAlignment(Pos.TOP_CENTER);
+        rightColumn.setPadding(new Insets(45, 0, 0, 0));
+
+        Label lblAvatarTitle = new Label("Profile picture:");
+        lblAvatarTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #666666;");
+
+        // Circular / rounded picture framing layout window
+        VBox avatarBox = new VBox();
+        avatarBox.setPrefSize(140, 140);
+        avatarBox.setMaxSize(140, 140);
+        avatarBox.setStyle("-fx-background-color: #e9e9e9; -fx-border-color: #cccccc; -fx-border-width: 1; -fx-border-radius: 70; -fx-background-radius: 70;");
+        avatarBox.setAlignment(Pos.CENTER);
+
+        Label lblAvatarPlaceholder = new Label("👤");
+        lblAvatarPlaceholder.setStyle("-fx-font-size: 48px; -fx-text-fill: #aaaaaa;");
+        avatarBox.getChildren().add(lblAvatarPlaceholder);
+
+        Button btnUploadAvatar = new Button("Upload photo");
+        btnUploadAvatar.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 6 14 6 14; -fx-font-size: 12px; -fx-cursor: hand;");
+
+        rightColumn.getChildren().addAll(lblAvatarTitle, avatarBox, btnUploadAvatar);
+
+        // Combine left information form layout and right column profile layout together inside center container
+        mainContent.getChildren().addAll(leftColumn, rightColumn);
+        layout.setCenter(mainContent);
+
+        // 4. Stage Presentation
         stage.setTitle("Account profile");
-        stage.setScene(new Scene(layout, 640, 400));
+        stage.setScene(new Scene(layout, 920, 520)); // Adjusted layout sizing for two columns
+        stage.setResizable(false);
         stage.show();
     }
 
-    //creates a consistently styled navigation button
-    private static Button createNavigationButton(String text)
+    private static Hyperlink createNavigationLink(String text)
     {
-        Button button = new Button(text);
-        button.setStyle("-fx-background-color: black;" + "-fx-text-fill: white;" + "-fx-font-size: 13px;" + "-fx-padding: 0;");
-        return button;
+        Hyperlink link = new Hyperlink(text);
+        link.setStyle("-fx-text-fill: white; -fx-underline: false; -fx-font-size: 14px; -fx-font-weight: bold;");
+        return link;
     }
 
-    //adds one labelled profile field to the grid
-    private static void addField(GridPane profile, int row, String labelText, TextField field)
+    private static void addField(GridPane profile, int row, String labelText, TextField field, String promptText)
     {
         Label label = new Label(labelText);
-        label.setStyle("-fx-font-size: 13px; -fx-text-fill: black;");
+        label.setStyle("-fx-font-size: 14px; -fx-text-fill: #666666; -fx-font-weight: bold;");
 
-        field.setPromptText("...");
-        field.setPrefSize(205, 23);
-        field.setStyle("-fx-background-color: black;" + "-fx-text-fill: white;" + "-fx-prompt-text-fill: white;" + "-fx-font-size: 13px;" + "-fx-padding: 2px 6px;");
+        field.setPromptText(promptText);
+        field.setMaxWidth(Double.MAX_VALUE);
+        field.setPrefHeight(32);
+        field.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 10;");
 
         profile.add(label, 0, row);
         profile.add(field, 1, row);

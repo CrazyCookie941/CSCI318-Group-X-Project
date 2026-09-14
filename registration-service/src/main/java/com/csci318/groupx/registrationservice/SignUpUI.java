@@ -6,6 +6,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -14,57 +15,92 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-//displays the account registration form
+// Displays the account registration form with a clean, unified aesthetic matching other workspace views
 public class SignUpUI extends Application
 {
 
     @Override
     public void start(Stage stage)
     {
-        //create the registration heading and account input controls
+        // 1. Root Layout Backdrop Container
+        StackPane rootLayout = new StackPane();
+        rootLayout.setStyle("-fx-background-color: #fafafa;"); // Modern ultra-light background matching other screens
+        rootLayout.setPadding(new Insets(30));
+
+        // 2. Centralized Registration Form Card Panel
+        VBox cardContainer = new VBox(22);
+        cardContainer.setAlignment(Pos.TOP_LEFT);
+        cardContainer.setMaxSize(380, 480); // Keeps the signup capsule perfectly proportioned
+        cardContainer.setPadding(new Insets(35, 40, 35, 40));
+        // Clean white card structure featuring a subtle drop-shadow effect
+        cardContainer.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 8, 0, 0, 4);");
+
+        // Typography Header Grouping Block
+        VBox headersBlock = new VBox(4);
+        headersBlock.setAlignment(Pos.TOP_LEFT);
+
         Label welcome = new Label("Welcome");
-        welcome.setStyle("-fx-font-size: 34px; -fx-text-fill: black;");
+        welcome.setStyle("-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a;");
 
-        Label title = new Label("Sign Up");
-        title.setStyle("-fx-font-size: 24px; -fx-text-fill: black;");
+        Label title = new Label("Create an account to get started");
+        title.setStyle("-fx-font-size: 14px; -fx-text-fill: #666666; -fx-padding: 0 0 5 0;");
 
+        headersBlock.getChildren().addAll(welcome, title);
+
+        // Input Fields (Unified look with generous click/touch targets)
         TextField emailField = new TextField();
-        emailField.setPromptText("Email");
-        emailField.setPrefSize(183, 38);
-        emailField.setStyle("-fx-font-size: 14px;");
+        emailField.setPromptText("Email address");
+        emailField.setPrefHeight(38);
+        emailField.setMaxWidth(Double.MAX_VALUE);
+        emailField.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 12; -fx-font-size: 14px;");
 
         PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Password");
-        passwordField.setPrefSize(183, 38);
-        passwordField.setStyle("-fx-font-size: 14px;");
+        passwordField.setPrefHeight(38);
+        passwordField.setMaxWidth(Double.MAX_VALUE);
+        passwordField.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 12; -fx-font-size: 14px;");
 
+        // Form Control Options
         CheckBox rememberMe = new CheckBox("Remember me");
-        rememberMe.setStyle("-fx-font-size: 12px; -fx-text-fill: black;");
+        rememberMe.setStyle("-fx-font-size: 13px; -fx-text-fill: #555555; -fx-cursor: hand;");
 
+        // Premium Primary Blue Action Button
         Button signUpButton = new Button("Sign Up");
-        signUpButton.setPrefSize(195, 35);
-        signUpButton.setStyle("-fx-background-color: #2410ff;" + "-fx-text-fill: white;" + "-fx-font-size: 23px;");
+        signUpButton.setPrefHeight(40);
+        signUpButton.setMaxWidth(Double.MAX_VALUE); // Stretches across the card container block
+        signUpButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;");
 
-        Label accountLink = new Label("Already have an account?");
-        accountLink.setStyle("-fx-text-fill: #2410ff; -fx-font-size: 12px;");
+        // Dynamic hover animation color transformations
+        signUpButton.setOnMouseEntered(e -> signUpButton.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
+        signUpButton.setOnMouseExited(e -> signUpButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
 
+        // Interactive Validation Status Message
         Label message = new Label();
-        message.setStyle("-fx-text-fill: #d00000;");
+        message.setWrapText(true);
+        message.setStyle("-fx-text-fill: #d00000; -fx-font-size: 13px; -fx-font-weight: bold;");
 
-        //validate the required fields before reporting the submission result
+        // Form registration submission checking rules
         signUpButton.setOnAction(event -> {
-            if (emailField.getText().isBlank() || passwordField.getText().isBlank()) { message.setText("Please enter both email and password."); }
-            else { message.setText("Account created."); }
+            if (emailField.getText().isBlank() || passwordField.getText().isBlank()) {
+                message.setText("Please enter both email and password.");
+            } else {
+                message.setText("Account created successfully.");
+            }
         });
 
-        //keep the existing-account link aligned with the form
-        HBox accountRow = new HBox(accountLink);
+        // Navigation Footer Links Grouping
+        Label accountLabel = new Label("Already have an account? ");
+        accountLabel.setStyle("-fx-text-fill: #555555; -fx-font-size: 13px;");
+
+        Hyperlink accountLink = new Hyperlink("Sign In");
+        accountLink.setStyle("-fx-text-fill: #007bc4; -fx-font-size: 13px; -fx-underline: false; -fx-padding: 0; -fx-font-weight: bold;");
+
+        HBox accountRow = new HBox(accountLabel, accountLink);
         accountRow.setAlignment(Pos.CENTER_LEFT);
 
-        VBox form = new VBox(
-                20,
-                welcome,
-                title,
+        // Assembly of card and core inputs
+        cardContainer.getChildren().addAll(
+                headersBlock,
                 emailField,
                 passwordField,
                 rememberMe,
@@ -72,17 +108,13 @@ public class SignUpUI extends Application
                 accountRow,
                 message
         );
-        form.setAlignment(Pos.CENTER_LEFT);
-        form.setFillWidth(false);
-        form.setPrefWidth(195);
 
-        //place the form on the page and apply the page background
-        StackPane layout = new StackPane(form);
-        layout.setStyle("-fx-background-color: #d9d9d9;");
-        layout.setPadding(new Insets(20));
+        rootLayout.getChildren().add(cardContainer);
 
-        stage.setTitle("Sign Up");
-        stage.setScene(new Scene(layout, 620, 390));
+        // 3. Stage Presentation Sizing
+        stage.setTitle("Create Account");
+        stage.setScene(new Scene(rootLayout, 640, 540)); // Dimensions tracking clean window layout metrics
+        stage.setResizable(false);
         stage.show();
     }
 

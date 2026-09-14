@@ -5,124 +5,164 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-//displays expandable account and application settings sections
+// Displays expandable account and application settings sections with a clean, unified aesthetic
 public class SettingsUI extends Application
 {
 
     @Override
     public void start(Stage stage)
     {
-        //build the shared navigation bar at the top of the settings page
-        Button homeButton = createNavigationButton("Home");
-        Button eventsButton = createNavigationButton("My events");
-        Button accountButton = createNavigationButton("Account");
+        // 1. Root Layout Container
+        BorderPane layout = new BorderPane();
+        layout.setStyle("-fx-background-color: #fafafa;"); // Modern light background matching other views
+
+        // 2. Styled Top Navigation Bar
+        HBox navigationBar = new HBox();
+        navigationBar.setPadding(new Insets(12, 24, 12, 24));
+        navigationBar.setSpacing(20);
+        navigationBar.setAlignment(Pos.CENTER_LEFT);
+        navigationBar.setStyle("-fx-background-color: #1a1a1a;"); // Shared corporate dark backing
+
+        Hyperlink homeLink = createNavigationLink("Home");
+        Hyperlink eventsLink = createNavigationLink("My events");
+        Hyperlink accountLink = createNavigationLink("Account");
 
         Region spacer = new Region();
-        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        HBox navigationBar = new HBox(30, homeButton, eventsButton, spacer, accountButton);
-        navigationBar.setAlignment(Pos.CENTER_LEFT);
-        navigationBar.setPadding(new Insets(10, 14, 10, 14));
-        navigationBar.setStyle("-fx-background-color: black;");
+        navigationBar.getChildren().addAll(homeLink, eventsLink, spacer, accountLink);
+        layout.setTop(navigationBar);
+
+        // 3. Central Working Content Pane
+        VBox content = new VBox(25);
+        content.setPadding(new Insets(35, 40, 35, 45));
+        content.setAlignment(Pos.TOP_LEFT);
 
         Label title = new Label("Settings");
-        title.setStyle("-fx-font-size: 24px; -fx-text-fill: black;");
+        title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #222222;");
 
-        //each section starts collapsed and can reveal its description
-        VBox settings = new VBox(
-                10,
+        // Vertical stack for the expandable layout card boxes
+        VBox settingsContainer = new VBox(15);
+        settingsContainer.setStyle("-fx-background-color: transparent;");
+        settingsContainer.setMaxWidth(Double.MAX_VALUE);
+        VBox.setVgrow(settingsContainer, Priority.ALWAYS);
+
+        // Load expandable sections cleanly without structural constraints
+        settingsContainer.getChildren().addAll(
                 createSettingsSection("Account details", "Update your name, email address, and account preferences."),
-                createSettingsSection("Financial information", "Manage payment methods and billing information."),
-                createSettingsSection("Notifications", "Choose which event and account notifications you receive."),
-                createSettingsSection("Security", "Change your password and review account security options."),
-                createSettingsSection("Other", "View additional settings for your account.")
+                createSettingsSection("Financial information", "Manage payment methods, transactions, and billing information."),
+                createSettingsSection("Notifications", "Choose which event reminders and account updates you receive dynamically."),
+                createSettingsSection("Security", "Change your password, review active sessions, and update security parameters."),
+                createSettingsSection("Other", "View system version logs, documentation resources, and corporate terms.")
         );
-        settings.setPadding(new Insets(1, 0, 0, 8));
 
-        VBox content = new VBox(8, title, settings);
-        content.setPadding(new Insets(12, 0, 0, 0));
+        content.getChildren().addAll(title, settingsContainer);
 
-        BorderPane layout = new BorderPane();
-        layout.setTop(navigationBar);
-        layout.setCenter(content);
-        layout.setPadding(new Insets(27, 16, 20, 16));
-        layout.setStyle("-fx-background-color: #d9d9d9;");
+        // 4. Scroll Wrapper Integration (Safeguards against window clipping)
+        ScrollPane scrollWrapper = new ScrollPane(content);
+        scrollWrapper.setFitToWidth(true);
+        scrollWrapper.setFitToHeight(true);
+        scrollWrapper.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        scrollWrapper.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollWrapper.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 
-        stage.setTitle("Settings");
-        stage.setScene(new Scene(layout, 640, 400));
+        BorderPane.setMargin(scrollWrapper, new Insets(0, 15, 0, 0));
+        layout.setCenter(scrollWrapper);
+
+        // 5. Stage Initialization Settings
+        stage.setTitle("Application Settings");
+        stage.setScene(new Scene(layout, 1020, 580)); // Matching design width geometry safely
         stage.show();
     }
 
-    //creates a consistently styled navigation button
-    private static Button createNavigationButton(String text)
+    // Creates a consistently styled hyperlink navigation item matching prior designs
+    private static Hyperlink createNavigationLink(String text)
     {
-        Button button = new Button(text);
-        button.setStyle("-fx-background-color: black;" + "-fx-text-fill: white;" + "-fx-font-size: 13px;" + "-fx-padding: 0;");
-        return button;
+        Hyperlink link = new Hyperlink(text);
+        link.setStyle("-fx-text-fill: white; -fx-underline: false; -fx-font-size: 14px; -fx-font-weight: bold;");
+        return link;
     }
 
-    //creates one expandable settings section
-    private static VBox createSettingsSection(String title, String detailsText)
+    // Creates one clean modern expandable settings block using an ultra-reliable BorderPane card rule
+    private static VBox createSettingsSection(String sectionTitle, String detailsText)
     {
-        Label arrow = new Label("▼");
-        arrow.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
+        VBox componentBlock = new VBox(0); // Holds header row and details drawer directly together
+        componentBlock.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(componentBlock, Priority.ALWAYS);
 
-        Button button = createSettingsButton(title, arrow);
-        Label details = new Label(detailsText);
-        details.setWrapText(true);
-        details.setMaxWidth(250);
-        details.setStyle("-fx-text-fill: black; -fx-font-size: 12px;");
+        // --- ROW CONTROLLER: BorderPane handles foolproof left-text right-arrow positioning ---
+        BorderPane rowHeaderCard = new BorderPane();
+        rowHeaderCard.setPadding(new Insets(16, 24, 16, 24));
+        rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.01), 4, 0, 0, 1);");
 
-        VBox section = new VBox(5, button, details);
-        details.setVisible(false);
-        details.setManaged(false);
+        // Section Title Label locked tightly into Left slot territory
+        Label titleLabel = new Label(sectionTitle);
+        titleLabel.setStyle("-fx-text-fill: #222222; -fx-font-size: 15px; -fx-font-weight: bold;");
+        HBox leftWrapper = new HBox(titleLabel);
+        leftWrapper.setAlignment(Pos.CENTER_LEFT);
+        rowHeaderCard.setLeft(leftWrapper);
 
-        //toggle both visibility and layout space when the section is clicked
-        button.setOnAction(event -> {
-            boolean expanded = details.isVisible();
-            details.setVisible(!expanded);
-            details.setManaged(!expanded);
-            arrow.setText(expanded ? "▼" : "▲");
+        // Dynamic Arrow Indicator locked tightly into Right slot territory
+        Label arrowIndicator = new Label("▼");
+        arrowIndicator.setStyle("-fx-text-fill: #777777; -fx-font-size: 13px; -fx-font-weight: bold;");
+        HBox rightWrapper = new HBox(arrowIndicator);
+        rightWrapper.setAlignment(Pos.CENTER_RIGHT);
+        rowHeaderCard.setRight(rightWrapper);
+
+        // --- DETAILS DRAWER PANEL ---
+        Label detailsLabel = new Label(detailsText);
+        detailsLabel.setWrapText(true);
+        detailsLabel.setMaxWidth(Double.MAX_VALUE);
+        detailsLabel.setStyle("-fx-text-fill: #555555; -fx-font-size: 14px; -fx-line-spacing: 3;");
+
+        // Structured wrapper frame behind expanded text instructions
+        VBox drawerContent = new VBox(detailsLabel);
+        drawerContent.setPadding(new Insets(15, 24, 18, 24));
+        drawerContent.setStyle("-fx-background-color: #f7f7f7; -fx-border-color: transparent #e0e0e0 #e0e0e0 #e0e0e0; -fx-border-width: 1; -fx-border-radius: 0 0 6 6; -fx-background-radius: 0 0 6 6;");
+
+        // Starts collapsed cleanly
+        drawerContent.setVisible(false);
+        drawerContent.setManaged(false);
+
+        // --- INTERACTIVE ACTIONS AND ANIMATION TRIGGERS ---
+        // Highlight row header when hovering over the card container area
+        rowHeaderCard.setOnMouseEntered(e -> rowHeaderCard.setStyle("-fx-background-color: #fcfcfc; -fx-border-color: #cccccc; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;"));
+        rowHeaderCard.setOnMouseExited(e -> {
+            if (drawerContent.isVisible()) {
+                // Keep bottom card borders flat if open to link with the expanded panel cleanly
+                rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0 #e0e0e0 transparent #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6 6 0 0; -fx-background-radius: 6 6 0 0; -fx-cursor: hand;");
+            } else {
+                rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;");
+            }
         });
 
-        return section;
-    }
+        // Click interaction fires expansion state updates safely
+        rowHeaderCard.setOnMouseClicked(event -> {
+            boolean isExpanded = drawerContent.isVisible();
+            drawerContent.setVisible(!isExpanded);
+            drawerContent.setManaged(!isExpanded);
+            arrowIndicator.setText(isExpanded ? "▼" : "▲");
 
-    //creates the clickable header used for a settings section
-    private static Button createSettingsButton(String text, Label arrow)
-    {
-        Button button = new Button();
-        button.setGraphic(createSettingsLabel(text, arrow));
-        button.setContentDisplay(javafx.scene.control.ContentDisplay.GRAPHIC_ONLY);
-        button.setAlignment(Pos.CENTER_LEFT);
-        button.setPrefSize(154, 23);
-        button.setMinSize(154, 23);
-        button.setMaxSize(154, 23);
-        button.setStyle("-fx-background-color: black;" + "-fx-background-radius: 0;" + "-fx-border-width: 0;" + "-fx-padding: 0;");
-        return button;
-    }
+            // Adjust card corner curves instantly depending on drawer layout states
+            if (!isExpanded) {
+                rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0 #e0e0e0 transparent #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6 6 0 0; -fx-background-radius: 6 6 0 0; -fx-cursor: hand;");
+            } else {
+                rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;");
+            }
+        });
 
-    //builds the header content with the title and expansion arrow
-    private static HBox createSettingsLabel(String text, Label arrow)
-    {
-        Label label = new Label(text);
-        label.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-
-        HBox content = new HBox(4, label, spacer, arrow);
-        content.setAlignment(Pos.CENTER_LEFT);
-        content.setPadding(new Insets(0, 7, 0, 3));
-        content.setPrefWidth(154);
-        return content;
+        componentBlock.getChildren().addAll(rowHeaderCard, drawerContent);
+        return componentBlock;
     }
 
     public static void main(String[] args) { launch(args); }

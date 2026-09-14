@@ -6,6 +6,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -14,55 +15,83 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-//displays the sign-in form and validates the required fields
+// Displays the sign-in form and validates the required fields with a clean, unified aesthetic
 public class LoginUI extends Application
 {
 
     @Override
     public void start(Stage stage)
     {
-        //create the page heading and input controls
-        Label title = new Label("Sign In");
-        title.setStyle("-fx-font-size: 24px; -fx-text-fill: black;");
+        // 1. Root Layout Backdrop Container
+        StackPane rootLayout = new StackPane();
+        rootLayout.setStyle("-fx-background-color: #fafafa;"); // Modern ultra-light background matching other screens
+        rootLayout.setPadding(new Insets(30));
 
+        // 2. Centralized Form Presentation Card Panel
+        VBox cardContainer = new VBox(22);
+        cardContainer.setAlignment(Pos.TOP_LEFT);
+        cardContainer.setMaxSize(360, 410); // Keeps the login capsule perfectly proportioned
+        cardContainer.setPadding(new Insets(35, 40, 35, 40));
+        // Clean white card structure featuring a subtle drop-shadow effect
+        cardContainer.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 8, 0, 0, 4);");
+
+        // Page Header
+        Label title = new Label("Sign In");
+        title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #1a1a1a; -fx-padding: 0 0 5 0;");
+
+        // Input Fields (Unified look with generous click/touch targets)
         TextField emailField = new TextField();
         emailField.setPromptText("Email");
-        emailField.setPrefSize(183, 38);
-        emailField.setStyle("-fx-font-size: 14px;");
+        emailField.setPrefHeight(38);
+        emailField.setMaxWidth(Double.MAX_VALUE);
+        emailField.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 12; -fx-font-size: 14px;");
 
         PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Password");
-        passwordField.setPrefSize(183, 38);
-        passwordField.setStyle("-fx-font-size: 14px;");
+        passwordField.setPrefHeight(38);
+        passwordField.setMaxWidth(Double.MAX_VALUE);
+        passwordField.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 12; -fx-font-size: 14px;");
 
-        CheckBox rememberMe = new CheckBox("Remember me");
-        rememberMe.setStyle("-fx-font-size: 12px; -fx-text-fill: black;");
-
-        Button loginButton = new Button("Sign In");
-        loginButton.setPrefSize(210, 35);
-        loginButton.setStyle("-fx-background-color: #2410ff;" + "-fx-text-fill: white;" + "-fx-font-size: 23px;");
-
+        // Interactive Validation Status Message
         Label message = new Label();
-        message.setStyle("-fx-text-fill: #d00000;");
+        message.setWrapText(true);
+        message.setStyle("-fx-text-fill: #d00000; -fx-font-size: 13px; -fx-font-weight: bold;");
 
-        //show a validation message when the user submits the form
+        // Form Control Options
+        CheckBox rememberMe = new CheckBox("Remember me");
+        rememberMe.setStyle("-fx-font-size: 13px; -fx-text-fill: #555555; -fx-cursor: hand;");
+
+        // Premium Primary Blue Action Button
+        Button loginButton = new Button("Sign In");
+        loginButton.setPrefHeight(40);
+        loginButton.setMaxWidth(Double.MAX_VALUE); // Automatically stretches across card panel
+        loginButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;");
+
+        // Dynamic hover animation color shifts
+        loginButton.setOnMouseEntered(e -> loginButton.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
+        loginButton.setOnMouseExited(e -> loginButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
+
+        // Validation trigger matching the internal structure
         loginButton.setOnAction(event -> {
-            if (emailField.getText().isBlank() || passwordField.getText().isBlank()) { message.setText("Please enter both email and password."); }
-            else { message.setText("Login submitted."); }
+            if (emailField.getText().isBlank() || passwordField.getText().isBlank()) {
+                message.setText("Please enter both email and password.");
+            } else {
+                message.setText("Login submitted.");
+            }
         });
 
-        Label forgotPassword = new Label("Forgot password");
-        forgotPassword.setStyle("-fx-text-fill: #2410ff; -fx-font-size: 12px;");
+        // Navigation Hyperlink Options
+        Hyperlink forgotPassword = new Hyperlink("Forgot password?");
+        forgotPassword.setStyle("-fx-text-fill: #007bc4; -fx-font-size: 13px; -fx-underline: false; -fx-padding: 0;");
 
-        Label createAccount = new Label("Create an account");
-        createAccount.setStyle("-fx-text-fill: #2410ff; -fx-font-size: 12px;");
+        Hyperlink createAccount = new Hyperlink("Create an account");
+        createAccount.setStyle("-fx-text-fill: #007bc4; -fx-font-size: 13px; -fx-underline: false; -fx-padding: 0;");
 
-        //keep the account-related links together beneath the button
-        HBox links = new HBox(10, forgotPassword, createAccount);
+        HBox links = new HBox(15, forgotPassword, createAccount);
         links.setAlignment(Pos.CENTER_LEFT);
 
-        VBox form = new VBox(
-                20,
+        // Assembly of card and core elements
+        cardContainer.getChildren().addAll(
                 title,
                 emailField,
                 passwordField,
@@ -71,17 +100,13 @@ public class LoginUI extends Application
                 links,
                 message
         );
-        form.setAlignment(Pos.CENTER_LEFT);
-        form.setFillWidth(false);
-        form.setPrefWidth(210);
 
-        //place the form on the page and apply the page background
-        StackPane layout = new StackPane(form);
-        layout.setStyle("-fx-background-color: #d9d9d9;");
-        layout.setPadding(new Insets(20));
+        rootLayout.getChildren().add(cardContainer);
 
+        // 3. Stage Initialization Setup
         stage.setTitle("Sign In");
-        stage.setScene(new Scene(layout, 620, 360));
+        stage.setScene(new Scene(rootLayout, 640, 480)); // Height expanded slightly to fit the card layout vertically
+        stage.setResizable(false);
         stage.show();
     }
 
