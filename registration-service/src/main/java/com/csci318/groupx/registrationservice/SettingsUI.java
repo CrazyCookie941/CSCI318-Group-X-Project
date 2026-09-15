@@ -27,20 +27,7 @@ public class SettingsUI extends Application
         layout.setStyle("-fx-background-color: #fafafa;"); // Modern light background matching other views
 
         // 2. Styled Top Navigation Bar
-        HBox navigationBar = new HBox();
-        navigationBar.setPadding(new Insets(12, 24, 12, 24));
-        navigationBar.setSpacing(20);
-        navigationBar.setAlignment(Pos.CENTER_LEFT);
-        navigationBar.setStyle("-fx-background-color: #1a1a1a;"); // Shared corporate dark backing
-
-        Hyperlink homeLink = createNavigationLink("Home");
-        Hyperlink eventsLink = createNavigationLink("My events");
-        Hyperlink accountLink = createNavigationLink("Account");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        navigationBar.getChildren().addAll(homeLink, eventsLink, spacer, accountLink);
+        HBox navigationBar = Navigation.createNavigationBar(stage);
         layout.setTop(navigationBar);
 
         // 3. Central Working Content Pane
@@ -86,13 +73,6 @@ public class SettingsUI extends Application
     }
 
     // Creates a consistently styled hyperlink navigation item matching prior designs
-    private static Hyperlink createNavigationLink(String text)
-    {
-        Hyperlink link = new Hyperlink(text);
-        link.setStyle("-fx-text-fill: white; -fx-underline: false; -fx-font-size: 14px; -fx-font-weight: bold;");
-        return link;
-    }
-
     // Creates one clean modern expandable settings block using an ultra-reliable BorderPane card rule
     private static VBox createSettingsSection(String sectionTitle, String detailsText)
     {

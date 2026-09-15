@@ -19,25 +19,7 @@ public class ViewEventUI extends Application {
         root.setStyle("-fx-background-color: #fafafa;"); // Clean, bright workspace backdrop
 
         // 2. Top Navigation Bar
-        HBox navBar = new HBox();
-        navBar.setPadding(new Insets(12, 24, 12, 24));
-        navBar.setSpacing(20);
-        navBar.setAlignment(Pos.CENTER_LEFT);
-        navBar.setStyle("-fx-background-color: #1a1a1a;");
-
-        Hyperlink homeLink = new Hyperlink("Home");
-        Hyperlink eventsLink = new Hyperlink("My events");
-        Hyperlink accountLink = new Hyperlink("Account");
-
-        String navLinkStyle = "-fx-text-fill: white; -fx-underline: false; -fx-font-size: 14px; -fx-font-weight: bold;";
-        homeLink.setStyle(navLinkStyle);
-        eventsLink.setStyle(navLinkStyle);
-        accountLink.setStyle(navLinkStyle);
-
-        Region rightSpacer = new Region();
-        HBox.setHgrow(rightSpacer, Priority.ALWAYS);
-
-        navBar.getChildren().addAll(homeLink, eventsLink, rightSpacer, accountLink);
+        HBox navBar = Navigation.createNavigationBar(primaryStage);
         root.setTop(navBar);
 
         // 3. Central Viewing Container Split
@@ -118,9 +100,11 @@ public class ViewEventUI extends Application {
         HBox actionButtons = new HBox(15);
         Button btnRegister = new Button("Register for Event");
         btnRegister.setStyle("-fx-background-color: #2e7d32; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20 10 20; -fx-background-radius: 4; -fx-cursor: hand;");
+        btnRegister.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new TransactionUI().start(nextStage)));
 
         Button btnBack = new Button("Back to Listings");
         btnBack.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 10 20 10 20; -fx-cursor: hand;");
+        btnBack.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new DashboardUI().start(nextStage)));
 
         actionButtons.getChildren().addAll(btnRegister, btnBack);
         leftColumn.getChildren().addAll(headerTitle, infoGrid, descriptionBox, actionButtons);

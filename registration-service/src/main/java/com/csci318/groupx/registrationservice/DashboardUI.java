@@ -56,20 +56,7 @@ public class DashboardUI extends Application
         rootLayout.setStyle("-fx-background-color: #fafafa;");
 
         // 2. Styled Top Navigation Bar
-        HBox navigationBar = new HBox();
-        navigationBar.setPadding(new Insets(12, 24, 12, 24));
-        navigationBar.setSpacing(20);
-        navigationBar.setAlignment(Pos.CENTER_LEFT);
-        navigationBar.setStyle("-fx-background-color: #1a1a1a;");
-
-        Hyperlink homeLink = createNavigationLink("Home");
-        Hyperlink eventsLink = createNavigationLink("My events");
-        Hyperlink accountLink = createNavigationLink("Account");
-
-        Region navSpacer = new Region();
-        HBox.setHgrow(navSpacer, Priority.ALWAYS);
-
-        navigationBar.getChildren().addAll(homeLink, eventsLink, navSpacer, accountLink);
+        HBox navigationBar = Navigation.createNavigationBar(stage);
         rootLayout.setTop(navigationBar);
 
         // 3. LEFT COLUMN: Clean Sidebar Filters
@@ -169,13 +156,6 @@ public class DashboardUI extends Application
         stage.setMinWidth(750);
         stage.setMinHeight(480);
         stage.show();
-    }
-
-    private static Hyperlink createNavigationLink(String text)
-    {
-        Hyperlink link = new Hyperlink(text);
-        link.setStyle("-fx-text-fill: white; -fx-underline: false; -fx-font-size: 14px; -fx-font-weight: bold;");
-        return link;
     }
 
     private static Label createFilterLabel(String text)

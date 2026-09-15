@@ -46,6 +46,8 @@ public class IntroUI extends Application {
         // Dynamic styling transitions on element interaction
         btnSignUp.setOnMouseEntered(e -> btnSignUp.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold; -fx-padding: 12 28 12 28; -fx-background-radius: 6; -fx-cursor: hand;"));
         btnSignUp.setOnMouseExited(e -> btnSignUp.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold; -fx-padding: 12 28 12 28; -fx-background-radius: 6; -fx-cursor: hand;"));
+        btnSignUp.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new SignUpUI().start(nextStage)));
+        btnLogIn.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new LoginUI().start(nextStage)));
 
         ctaBox.getChildren().addAll(btnSignUp, btnLogIn);
         heroContainer.getChildren().addAll(mainTitle, subTitle, ctaBox);

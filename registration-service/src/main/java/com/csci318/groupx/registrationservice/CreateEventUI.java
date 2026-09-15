@@ -19,27 +19,7 @@ public class CreateEventUI extends Application
         root.setStyle("-fx-background-color: #f4f4f4;");
 
         // 2. Top Navigation Bar
-        HBox navBar = new HBox();
-        navBar.setPadding(new Insets(12, 24, 12, 24));
-        navBar.setSpacing(20);
-        navBar.setAlignment(Pos.CENTER_LEFT);
-        navBar.setStyle("-fx-background-color: #1a1a1a;");
-
-        Hyperlink homeLink = new Hyperlink("Home");
-        Hyperlink eventsLink = new Hyperlink("My events");
-        Hyperlink accountLink = new Hyperlink("Account");
-
-        // Styling Navigation Links
-        String navLinkStyle = "-fx-text-fill: white; -fx-underline: false; -fx-font-size: 14px; -fx-font-weight: bold;";
-        homeLink.setStyle(navLinkStyle);
-        eventsLink.setStyle(navLinkStyle);
-        accountLink.setStyle(navLinkStyle);
-
-        // Spacer to push the 'Account' link cleanly to the far right edge
-        Region rightSpacer = new Region();
-        HBox.setHgrow(rightSpacer, Priority.ALWAYS);
-
-        navBar.getChildren().addAll(homeLink, eventsLink, rightSpacer, accountLink);
+        HBox navBar = Navigation.createNavigationBar(primaryStage);
         root.setTop(navBar);
 
         // 3. Central Working Area Split (Left Form & Right Media)
