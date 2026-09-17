@@ -84,7 +84,7 @@ public class SignUpUI extends Application
             if (emailField.getText().isBlank() || passwordField.getText().isBlank()) {
                 message.setText("Please enter both email and password.");
             } else {
-                message.setText("Account created successfully.");
+                Navigation.goTo(stage, nextStage -> new DashboardUI().start(nextStage));
             }
         });
 
@@ -94,6 +94,7 @@ public class SignUpUI extends Application
 
         Hyperlink accountLink = new Hyperlink("Sign In");
         accountLink.setStyle("-fx-text-fill: #007bc4; -fx-font-size: 13px; -fx-underline: false; -fx-padding: 0; -fx-font-weight: bold;");
+        accountLink.setOnAction(event -> Navigation.goTo(stage, nextStage -> new LoginUI().start(nextStage)));
 
         HBox accountRow = new HBox(accountLabel, accountLink);
         accountRow.setAlignment(Pos.CENTER_LEFT);

@@ -29,20 +29,7 @@ public class MyListingsEventGoer extends Application
         layout.setStyle("-fx-background-color: #fafafa;");
 
         // 2. Styled Top Navigation Bar
-        HBox navigationBar = new HBox();
-        navigationBar.setPadding(new Insets(12, 24, 12, 24));
-        navigationBar.setSpacing(20);
-        navigationBar.setAlignment(Pos.CENTER_LEFT);
-        navigationBar.setStyle("-fx-background-color: #1a1a1a;");
-
-        Hyperlink homeLink = createNavigationLink("Home");
-        Hyperlink eventsLink = createNavigationLink("My events");
-        Hyperlink accountLink = createNavigationLink("Account");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        navigationBar.getChildren().addAll(homeLink, eventsLink, spacer, accountLink);
+        HBox navigationBar = Navigation.createNavigationBar(stage);
         layout.setTop(navigationBar);
 
         // 3. Central Working Content Pane
@@ -59,10 +46,10 @@ public class MyListingsEventGoer extends Application
         VBox.setVgrow(listingsContainer, Priority.ALWAYS);
 
         listingsContainer.getChildren().addAll(
-                createListing("Community barbecue", "/Images/park-art-P1020661.jpg"),
-                createListing("Radiohead concert", "/Images/394f75e3cb710d620129ea9fef2754f83b5bc54b8e8f4ffcfc2badd46c297059.jpeg"),
-                createListing("Nightclub dance event", "/Images/Wikipedia_space_ibiza(03).jpg"),
-                createListing("Bingo night social", "/Images/Bingo_night.jpg")
+                createListing(stage, "Community barbecue", "/Images/park-art-P1020661.jpg"),
+                createListing(stage, "Radiohead concert", "/Images/394f75e3cb710d620129ea9fef2754f83b5bc54b8e8f4ffcfc2badd46c297059.jpeg"),
+                createListing(stage, "Nightclub dance event", "/Images/Wikipedia_space_ibiza(03).jpg"),
+                createListing(stage, "Bingo night social", "/Images/Bingo_night.jpg")
         );
 
         content.getChildren().addAll(title, listingsContainer);
@@ -84,14 +71,7 @@ public class MyListingsEventGoer extends Application
         stage.show();
     }
 
-    private static Hyperlink createNavigationLink(String text)
-    {
-        Hyperlink link = new Hyperlink(text);
-        link.setStyle("-fx-text-fill: white; -fx-underline: false; -fx-font-size: 14px; -fx-font-weight: bold;");
-        return link;
-    }
-
-    private HBox createListing(String listingName, String imagePath)
+    private HBox createListing(Stage stage, String listingName, String imagePath)
     {
         HBox listingRow = new HBox(15);
         listingRow.setAlignment(Pos.CENTER_LEFT);
@@ -129,7 +109,7 @@ public class MyListingsEventGoer extends Application
         viewButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;");
         viewButton.setOnMouseEntered(e -> viewButton.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
         viewButton.setOnMouseExited(e -> viewButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
-        viewButton.setOnAction(event -> showMessage("Viewing Details", "Opening full platform details for: " + listingName));
+        viewButton.setOnAction(event -> Navigation.goTo(stage, nextStage -> new ViewEventUI().start(nextStage)));
 
         // View Invoice Button
         Button invoiceButton = new Button("View Invoice");
@@ -140,7 +120,7 @@ public class MyListingsEventGoer extends Application
         invoiceButton.setStyle(normalInvoiceStyle);
         invoiceButton.setOnMouseEntered(e -> invoiceButton.setStyle(hoverInvoiceStyle));
         invoiceButton.setOnMouseExited(e -> invoiceButton.setStyle(normalInvoiceStyle));
-        invoiceButton.setOnAction(event -> showMessage("Invoice Details", "Generating financial invoice tracking slip for: " + listingName));
+        invoiceButton.setOnAction(event -> Navigation.goTo(stage, nextStage -> new TransactionUI().start(nextStage)));
 
         // Cancel Booking Button
         Button removeButton = new Button("Cancel Booking");

@@ -20,20 +20,7 @@ public class AccountUI extends Application
         layout.setStyle("-fx-background-color: #fafafa;");
 
         // 2. Styled Top Navigation Bar
-        HBox navigationBar = new HBox();
-        navigationBar.setPadding(new Insets(12, 24, 12, 24));
-        navigationBar.setSpacing(20);
-        navigationBar.setAlignment(Pos.CENTER_LEFT);
-        navigationBar.setStyle("-fx-background-color: #1a1a1a;");
-
-        Hyperlink homeLink = createNavigationLink("Home");
-        Hyperlink eventsLink = createNavigationLink("My events");
-        Hyperlink accountLink = createNavigationLink("Account");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        navigationBar.getChildren().addAll(homeLink, eventsLink, spacer, accountLink);
+        HBox navigationBar = Navigation.createNavigationBar(stage);
         layout.setTop(navigationBar);
 
         // 3. Central Content Split Frame (Form Left, Image Right)
@@ -128,13 +115,6 @@ public class AccountUI extends Application
         stage.setScene(new Scene(layout, 920, 520)); // Adjusted layout sizing for two columns
         stage.setResizable(false);
         stage.show();
-    }
-
-    private static Hyperlink createNavigationLink(String text)
-    {
-        Hyperlink link = new Hyperlink(text);
-        link.setStyle("-fx-text-fill: white; -fx-underline: false; -fx-font-size: 14px; -fx-font-weight: bold;");
-        return link;
     }
 
     private static void addField(GridPane profile, int row, String labelText, TextField field, String promptText)
