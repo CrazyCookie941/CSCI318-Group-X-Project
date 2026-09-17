@@ -18,6 +18,9 @@ import java.util.function.Consumer;
 
 final class Navigation
 {
+    private static Popup activePopup;
+    private static Button activePopupAnchor;
+
     private Navigation() {}
 
     static void goTo(Stage stage, Consumer<Stage> screen)
@@ -105,7 +108,13 @@ final class Navigation
             goTo(stage, nextStage -> new SettingsUI().start(nextStage));
         });
 
-        menu.getChildren().addAll(accountButton, settingsButton);
+        Button logoutButton = createPopupButton("Log out");
+        logoutButton.setOnAction(event -> {
+            closePopup(menu);
+            goTo(stage, nextStage -> new LandingPage().start(nextStage));
+        });
+
+        menu.getChildren().addAll(accountButton, settingsButton, logoutButton);
         showPopup(menu, profileButton);
     }
 
@@ -141,10 +150,30 @@ final class Navigation
 
     private static void showPopup(VBox content, Button anchor)
     {
+        if (activePopup != null) {
+            Popup popup = activePopup;
+            Button previousAnchor = activePopupAnchor;
+            popup.hide();
+            activePopup = null;
+            activePopupAnchor = null;
+
+            if (previousAnchor == anchor) {
+                return;
+            }
+        }
+
         Popup popup = new Popup();
         popup.setAutoHide(true);
         popup.getContent().add(content);
         content.getProperties().put("popup", popup);
+        activePopup = popup;
+        activePopupAnchor = anchor;
+        popup.setOnHidden(event -> {
+            if (activePopup == popup) {
+                activePopup = null;
+                activePopupAnchor = null;
+            }
+        });
         popup.show(anchor, anchor.localToScreen(anchor.getBoundsInLocal()).getMaxX() - content.getMinWidth(),
                 anchor.localToScreen(anchor.getBoundsInLocal()).getMaxY() + 6);
     }
@@ -153,6 +182,10 @@ final class Navigation
     {
         if (content.getProperties().get("popup") instanceof Popup popup) {
             popup.hide();
+            if (activePopup == popup) {
+                activePopup = null;
+                activePopupAnchor = null;
+            }
         }
     }
 
