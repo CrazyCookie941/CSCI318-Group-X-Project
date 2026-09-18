@@ -46,10 +46,10 @@ public class MyListingsEventGoer extends Application
         VBox.setVgrow(listingsContainer, Priority.ALWAYS);
 
         listingsContainer.getChildren().addAll(
-                createListing(stage, "Community barbecue", "/Images/park-art-P1020661.jpg"),
-                createListing(stage, "Radiohead concert", "/Images/394f75e3cb710d620129ea9fef2754f83b5bc54b8e8f4ffcfc2badd46c297059.jpeg"),
-                createListing(stage, "Nightclub dance event", "/Images/Wikipedia_space_ibiza(03).jpg"),
-                createListing(stage, "Bingo night social", "/Images/Bingo_night.jpg")
+                createListing(stage, EventCatalog.getEvents().get(2)),
+                createListing(stage, EventCatalog.getEvents().get(0)),
+                createListing(stage, EventCatalog.getEvents().get(1)),
+                createListing(stage, EventCatalog.getEvents().get(3))
         );
 
         content.getChildren().addAll(title, listingsContainer);
@@ -71,7 +71,7 @@ public class MyListingsEventGoer extends Application
         stage.show();
     }
 
-    private HBox createListing(Stage stage, String listingName, String imagePath)
+    private HBox createListing(Stage stage, EventListing listing)
     {
         HBox listingRow = new HBox(15);
         listingRow.setAlignment(Pos.CENTER_LEFT);
@@ -86,7 +86,7 @@ public class MyListingsEventGoer extends Application
         imageView.setPreserveRatio(true);
 
         // Text Heading Configuration
-        Label name = new Label(listingName);
+        Label name = new Label(listing.title());
         name.setWrapText(true);
         name.setAlignment(Pos.CENTER_LEFT);
         name.setStyle("-fx-text-fill: #222222; -fx-font-size: 15px; -fx-font-weight: bold;");
@@ -109,7 +109,7 @@ public class MyListingsEventGoer extends Application
         viewButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;");
         viewButton.setOnMouseEntered(e -> viewButton.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
         viewButton.setOnMouseExited(e -> viewButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
-        viewButton.setOnAction(event -> Navigation.goTo(stage, nextStage -> new ViewEventUI().start(nextStage)));
+        viewButton.setOnAction(event -> Navigation.goTo(stage, nextStage -> new ViewEventUI(listing).start(nextStage)));
 
         // View Invoice Button
         Button invoiceButton = new Button("View Invoice");
@@ -134,7 +134,7 @@ public class MyListingsEventGoer extends Application
         removeButton.setOnAction(event -> {
             VBox parentContainer = (VBox) listingRow.getParent();
             parentContainer.getChildren().remove(listingRow);
-            showMessage("Booking Cancelled", "You have successfully cancelled your booking for: " + listingName);
+            showMessage("Booking Cancelled", "You have successfully cancelled your booking for: " + listing.title());
         });
 
         actionButtonGroup.getChildren().addAll(viewButton, invoiceButton, removeButton);

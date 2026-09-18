@@ -8,7 +8,14 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 
 public class CreateEventUI extends Application
 {
@@ -45,10 +52,14 @@ public class CreateEventUI extends Application
         ColumnConstraints fieldColumn = new ColumnConstraints(300);
         formGrid.getColumnConstraints().addAll(labelColumn, fieldColumn);
 
+        Label lblTitle = new Label("Event name:");
+        TextField txtTitle = new TextField();
+        txtTitle.setPromptText("e.g. Radiohead concert");
+
         // Event Type Control
         Label lblType = new Label("Event type:");
         ComboBox<String> cbEventType = new ComboBox<>();
-        cbEventType.getItems().addAll("Concert", "Conference", "Exhibition", "Festival", "Workshop");
+        cbEventType.getItems().addAll("Concert", "Nightclub", "Conference", "Exhibition", "Festival", "Workshop", "Community", "Games");
         cbEventType.setPromptText("Select event type...");
         cbEventType.setMaxWidth(Double.MAX_VALUE);
 
@@ -75,24 +86,53 @@ public class CreateEventUI extends Application
         txtOtherInfo.setWrapText(true);
 
         // Assign controls sequentially into the grid layout
-        formGrid.add(lblType, 0, 0);
-        formGrid.add(cbEventType, 1, 0);
+        formGrid.add(lblTitle, 0, 0);
+        formGrid.add(txtTitle, 1, 0);
 
-        formGrid.add(lblLocation, 0, 1);
-        formGrid.add(txtLocation, 1, 1);
+        formGrid.add(lblType, 0, 1);
+        formGrid.add(cbEventType, 1, 1);
 
-        formGrid.add(lblPrice, 0, 2);
-        formGrid.add(txtPrice, 1, 2);
+        formGrid.add(lblLocation, 0, 2);
+        formGrid.add(txtLocation, 1, 2);
 
-        formGrid.add(lblSize, 0, 3);
-        formGrid.add(txtSize, 1, 3);
+        formGrid.add(lblPrice, 0, 3);
+        formGrid.add(txtPrice, 1, 3);
 
-        formGrid.add(lblInfo, 0, 4);
-        formGrid.add(txtOtherInfo, 1, 4);
+        formGrid.add(lblSize, 0, 4);
+        formGrid.add(txtSize, 1, 4);
+
+        formGrid.add(lblInfo, 0, 5);
+        formGrid.add(txtOtherInfo, 1, 5);
+
+        final String[] selectedImage = {null};
 
         // Submission Button Action
         Button btnSubmit = new Button("Create Listing");
         btnSubmit.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20 10 20; -fx-background-radius: 4;");
+
+        btnSubmit.setOnAction(event -> {
+            if (txtTitle.getText().isBlank() || cbEventType.getValue() == null
+                    || txtLocation.getText().isBlank()) {
+                new Alert(Alert.AlertType.WARNING, "Please provide an event name, type, and location.").showAndWait();
+                return;
+            }
+
+            try {
+                String imageLocation = copyUploadedImage(selectedImage[0]);
+                EventListing listing = new EventListing(
+                        txtTitle.getText().trim(),
+                        cbEventType.getValue(),
+                        txtLocation.getText().trim(),
+                        txtPrice.getText().isBlank() ? "Free" : txtPrice.getText().trim(),
+                        txtSize.getText().isBlank() ? "Not specified" : txtSize.getText().trim(),
+                        txtOtherInfo.getText().isBlank() ? "No additional information provided." : txtOtherInfo.getText().trim(),
+                        imageLocation);
+                EventCatalog.add(listing);
+                Navigation.goTo(primaryStage, nextStage -> new ViewEventUI(listing).start(nextStage));
+            } catch (IOException exception) {
+                new Alert(Alert.AlertType.ERROR, "The photo could not be uploaded: " + exception.getMessage()).showAndWait();
+            }
+        });
 
         leftColumn.getChildren().addAll(headerTitle, formGrid, btnSubmit);
 
@@ -103,20 +143,35 @@ public class CreateEventUI extends Application
         Label lblPromoImage = new Label("Promotional images:");
         lblPromoImage.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #555555;");
 
-        // Visual Placeholder representing image collection box
         VBox imagePlaceholderBox = new VBox();
         imagePlaceholderBox.setPrefSize(280, 240);
         imagePlaceholderBox.setStyle("-fx-border-color: #cccccc; -fx-border-style: dashed; -fx-border-width: 2; -fx-background-color: #e9e9e9; -fx-border-radius: 6; -fx-background-radius: 6;");
         imagePlaceholderBox.setAlignment(Pos.CENTER);
 
         // Icon presentation
-        Label lblUploadIcon = new Label("📸");
+        Label lblUploadIcon = new Label("Image");
         lblUploadIcon.setStyle("-fx-font-size: 32px;");
-        Label lblUploadText = new Label("Click to upload event image");
+        Label lblUploadText = new Label("Choose an event image");
         lblUploadText.setStyle("-fx-text-fill: #777777; -fx-font-size: 12px;");
 
         imagePlaceholderBox.getChildren().addAll(lblUploadIcon, lblUploadText);
-        rightColumn.getChildren().addAll(lblPromoImage, imagePlaceholderBox);
+        Button uploadButton = new Button("Choose photo");
+        uploadButton.setOnAction(event -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Choose an event photo");
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                    "Image files", "*.png", "*.jpg", "*.jpeg", "*.gif"));
+            java.io.File chosenFile = chooser.showOpenDialog(primaryStage);
+            if (chosenFile != null) {
+                selectedImage[0] = chosenFile.getAbsolutePath();
+                ImageView preview = new ImageView(new Image(chosenFile.toURI().toString()));
+                preview.setFitWidth(260);
+                preview.setFitHeight(180);
+                preview.setPreserveRatio(true);
+                imagePlaceholderBox.getChildren().setAll(preview, new Label(chosenFile.getName()));
+            }
+        });
+        rightColumn.getChildren().addAll(lblPromoImage, imagePlaceholderBox, uploadButton);
 
         // Combine left column layout and right column layout together inside center container
         mainContent.getChildren().addAll(leftColumn, rightColumn);
@@ -128,6 +183,19 @@ public class CreateEventUI extends Application
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
         primaryStage.show();
+    }
+
+    private String copyUploadedImage(String selectedImage) throws IOException {
+        if (selectedImage == null) {
+            return "/Images/event-ideas-for-party-eventbookings.jpeg";
+        }
+        Path uploadDirectory = Path.of(System.getProperty("user.home"), ".eventguide", "uploads");
+        Files.createDirectories(uploadDirectory);
+        Path source = Path.of(selectedImage);
+        String storedName = UUID.randomUUID() + "-" + source.getFileName();
+        Path destination = uploadDirectory.resolve(storedName);
+        Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
+        return destination.toString();
     }
 
     public static void main(String[] args) {

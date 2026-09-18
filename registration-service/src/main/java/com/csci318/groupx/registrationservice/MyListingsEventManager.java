@@ -49,7 +49,7 @@ public class MyListingsEventManager extends Application
 
         // Load items cleanly without formatting breaks
         listingsContainer.getChildren().addAll(
-                createListing("Community barbecue", "/Images/park-art-P1020661.jpg"),
+                createListing("Community barbecue", "/Images/istockphoto-964136996-612x612.jpg"),
                 createListing("Radiohead concert", "/Images/394f75e3cb710d620129ea9fef2754f83b5bc54b8e8f4ffcfc2badd46c297059.jpeg"),
                 createListing("Nightclub dance event", "/Images/Wikipedia_space_ibiza(03).jpg"),
                 createListing("Bingo night social", "/Images/Bingo_night.jpg")

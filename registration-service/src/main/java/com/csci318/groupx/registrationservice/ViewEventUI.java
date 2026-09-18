@@ -11,6 +11,15 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 public class ViewEventUI extends Application {
+    private final EventListing event;
+
+    public ViewEventUI() {
+        this(EventCatalog.getEvents().get(2));
+    }
+
+    public ViewEventUI(EventListing event) {
+        this.event = event;
+    }
 
     @Override
     public void start(Stage primaryStage) {
@@ -31,7 +40,7 @@ public class ViewEventUI extends Application {
         VBox leftColumn = new VBox(25);
         leftColumn.setMinWidth(420);
 
-        Label headerTitle = new Label("View an event listing");
+        Label headerTitle = new Label(event.title());
         headerTitle.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #222222;");
 
         // Structured display grid for the information fields
@@ -50,25 +59,25 @@ public class ViewEventUI extends Application {
         // Event Type
         Label lblType = new Label("Event type:");
         lblType.setStyle(labelStyle);
-        Label valType = new Label("Community barbecue");
+        Label valType = new Label(event.type());
         valType.setStyle(valueStyle);
 
         // Event Location
         Label lblLocation = new Label("Event location:");
         lblLocation.setStyle(labelStyle);
-        Label valLocation = new Label("Sydney Central Park");
+        Label valLocation = new Label(event.location());
         valLocation.setStyle(valueStyle);
 
         // Event Price
         Label lblPrice = new Label("Event price:");
         lblPrice.setStyle(labelStyle);
-        Label valPrice = new Label("$15");
+        Label valPrice = new Label(event.price());
         valPrice.setStyle(valueStyle);
 
         // Event Size
         Label lblSize = new Label("Event size:");
         lblSize.setStyle(labelStyle);
-        Label valSize = new Label("Medium");
+        Label valSize = new Label(event.size());
         valSize.setStyle(valueStyle);
 
         // Map components sequentially to the presentation grid
@@ -86,7 +95,7 @@ public class ViewEventUI extends Application {
         Label lblInfo = new Label("Other information:");
         lblInfo.setStyle(labelStyle);
 
-        Label valInfo = new Label("Fun lunch for family and friends. All food and refreshments are included with your ticket price entry.");
+        Label valInfo = new Label(event.description());
         valInfo.setWrapText(true);
         valInfo.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333; -fx-line-spacing: 4;");
         // Styled container panel behind text for readability
@@ -104,7 +113,7 @@ public class ViewEventUI extends Application {
 
         Button btnBack = new Button("Back to Listings");
         btnBack.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 10 20 10 20; -fx-cursor: hand;");
-        btnBack.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new DashboardUI().start(nextStage)));
+        btnBack.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new MyListingsEventGoer().start(nextStage)));
 
         actionButtons.getChildren().addAll(btnRegister, btnBack);
         leftColumn.getChildren().addAll(headerTitle, infoGrid, descriptionBox, actionButtons);
@@ -126,18 +135,18 @@ public class ViewEventUI extends Application {
         eventImageView.setFitHeight(238);
         eventImageView.setPreserveRatio(false); // Fills frame box area uniformly
 
-        // Note: Safe structural fall-back text loader layer shown if graphic asset fails to render
-        Label imagePlaceholderText = new Label("[ Event Cover Image ]");
+        Label imagePlaceholderText = new Label("No event image available");
         imagePlaceholderText.setStyle("-fx-text-fill: #999999; -fx-font-style: italic;");
         imageFrame.getChildren().addAll(imagePlaceholderText, eventImageView);
 
-        // URL fallback placeholder logic loading the real image context example smoothly
         try {
-            // Loading placeholder web building graphic to stand-in for the event structure
-            Image img = new Image("https://unsplash.com", true);
+            Image img = event.imageLocation().startsWith("/")
+                    ? new Image(getClass().getResource(event.imageLocation()).toExternalForm())
+                    : new Image(java.nio.file.Path.of(event.imageLocation()).toUri().toString());
             eventImageView.setImage(img);
-        } catch (Exception e) {
-            System.out.println("Could not download placeholder remote asset image.");
+            imagePlaceholderText.setVisible(false);
+        } catch (IllegalArgumentException e) {
+            imagePlaceholderText.setVisible(true);
         }
 
         rightColumn.getChildren().addAll(lblImages, imageFrame);

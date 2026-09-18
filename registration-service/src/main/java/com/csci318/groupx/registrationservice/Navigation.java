@@ -150,16 +150,15 @@ final class Navigation
 
     private static void showPopup(VBox content, Button anchor)
     {
-        if (activePopup != null) {
+        if (activePopup != null)
+        {
             Popup popup = activePopup;
             Button previousAnchor = activePopupAnchor;
             popup.hide();
             activePopup = null;
             activePopupAnchor = null;
 
-            if (previousAnchor == anchor) {
-                return;
-            }
+            if (previousAnchor == anchor) { return; }
         }
 
         Popup popup = new Popup();
@@ -169,7 +168,8 @@ final class Navigation
         activePopup = popup;
         activePopupAnchor = anchor;
         popup.setOnHidden(event -> {
-            if (activePopup == popup) {
+            if (activePopup == popup)
+            {
                 activePopup = null;
                 activePopupAnchor = null;
             }
@@ -180,9 +180,11 @@ final class Navigation
 
     private static void closePopup(VBox content)
     {
-        if (content.getProperties().get("popup") instanceof Popup popup) {
+        if (content.getProperties().get("popup") instanceof Popup popup)
+        {
             popup.hide();
-            if (activePopup == popup) {
+            if (activePopup == popup)
+            {
                 activePopup = null;
                 activePopupAnchor = null;
             }
