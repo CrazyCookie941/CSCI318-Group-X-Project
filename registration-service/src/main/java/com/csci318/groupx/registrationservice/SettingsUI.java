@@ -3,6 +3,7 @@ package com.csci318.groupx.registrationservice;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Hyperlink;
@@ -50,7 +51,7 @@ public class SettingsUI extends Application
                 createSettingsSection("Financial information", "Manage payment methods, transactions, and billing information."),
                 createSettingsSection("Notifications", "Choose which event reminders and account updates you receive dynamically."),
                 createSettingsSection("Security", "Change your password, review active sessions, and update security parameters."),
-                createSettingsSection("Other", "View system version logs, documentation resources, and corporate terms.")
+                createSettingsSection("Other", "View system version logs, documentation resources, and corporate terms.", createOtherSettingsContent())
         );
 
         content.getChildren().addAll(title, settingsContainer);
@@ -76,6 +77,11 @@ public class SettingsUI extends Application
     // Creates one clean modern expandable settings block using an ultra-reliable BorderPane card rule
     private static VBox createSettingsSection(String sectionTitle, String detailsText)
     {
+        return createSettingsSection(sectionTitle, detailsText, createDetailsLabel(detailsText));
+    }
+
+    private static VBox createSettingsSection(String sectionTitle, String detailsText, Node detailsContent)
+    {
         VBox componentBlock = new VBox(0); // Holds header row and details drawer directly together
         componentBlock.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(componentBlock, Priority.ALWAYS);
@@ -100,19 +106,18 @@ public class SettingsUI extends Application
         rowHeaderCard.setRight(rightWrapper);
 
         // --- DETAILS DRAWER PANEL ---
-        Label detailsLabel = new Label(detailsText);
-        detailsLabel.setWrapText(true);
-        detailsLabel.setMaxWidth(Double.MAX_VALUE);
-        detailsLabel.setStyle("-fx-text-fill: #555555; -fx-font-size: 14px; -fx-line-spacing: 3;");
-
-        // Structured wrapper frame behind expanded text instructions
-        VBox drawerContent = new VBox(detailsLabel);
+        VBox drawerContent = new VBox(detailsContent);
         drawerContent.setPadding(new Insets(15, 24, 18, 24));
         drawerContent.setStyle("-fx-background-color: #f7f7f7; -fx-border-color: transparent #e0e0e0 #e0e0e0 #e0e0e0; -fx-border-width: 1; -fx-border-radius: 0 0 6 6; -fx-background-radius: 0 0 6 6;");
 
         // Starts collapsed cleanly
-        drawerContent.setVisible(false);
-        drawerContent.setManaged(false);
+        boolean initiallyExpanded = "Other".equals(sectionTitle);
+        drawerContent.setVisible(initiallyExpanded);
+        drawerContent.setManaged(initiallyExpanded);
+        if (initiallyExpanded) {
+            arrowIndicator.setText("▲");
+            rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0 #e0e0e0 transparent #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6 6 0 0; -fx-background-radius: 6 6 0 0; -fx-cursor: hand;");
+        }
 
         // --- INTERACTIVE ACTIONS AND ANIMATION TRIGGERS ---
         // Highlight row header when hovering over the card container area
@@ -143,6 +148,94 @@ public class SettingsUI extends Application
 
         componentBlock.getChildren().addAll(rowHeaderCard, drawerContent);
         return componentBlock;
+    }
+
+    private static VBox createOtherSettingsContent()
+    {
+        VBox otherSettingsContainer = new VBox(12);
+        otherSettingsContainer.setFillWidth(true);
+        otherSettingsContainer.getChildren().addAll(
+                createNestedSettingsSection("Accessibility settings", "Adjust contrast, captioning, zoom, and reader support.",
+                        "High contrast mode", "Text scaling", "Captioning options", "Screen reader hints"),
+                createNestedSettingsSection("System & display settings", "Change display defaults, appearance, and platform behaviour.",
+                        "Theme preferences", "Display resolution", "Language & region", "Window behaviour"),
+                createNestedSettingsSection("Extra features / toggleable settings", "Control optional tools and feature switches for a custom experience.",
+                        "Quick actions", "Experimental widgets", "Advanced notifications", "Power-user shortcuts")
+        );
+        return otherSettingsContainer;
+    }
+
+    private static VBox createNestedSettingsSection(String sectionTitle, String summaryText, String... settingOptions)
+    {
+        VBox nestedSection = new VBox(0);
+        nestedSection.setMaxWidth(Double.MAX_VALUE);
+
+        BorderPane nestedHeader = new BorderPane();
+        nestedHeader.setPadding(new Insets(12, 18, 12, 18));
+        nestedHeader.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dcdcdc; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;");
+
+        Label nestedTitle = new Label(sectionTitle);
+        nestedTitle.setStyle("-fx-text-fill: #222222; -fx-font-size: 14px; -fx-font-weight: bold;");
+        HBox nestedTitleBox = new HBox(nestedTitle);
+        nestedTitleBox.setAlignment(Pos.CENTER_LEFT);
+        nestedHeader.setLeft(nestedTitleBox);
+
+        Label nestedArrow = new Label("▼");
+        nestedArrow.setStyle("-fx-text-fill: #777777; -fx-font-size: 12px; -fx-font-weight: bold;");
+        HBox nestedArrowBox = new HBox(nestedArrow);
+        nestedArrowBox.setAlignment(Pos.CENTER_RIGHT);
+        nestedHeader.setRight(nestedArrowBox);
+
+        VBox nestedDrawer = new VBox(8);
+        nestedDrawer.setPadding(new Insets(12, 18, 14, 18));
+        nestedDrawer.setStyle("-fx-background-color: #f3f3f3; -fx-border-color: transparent #dcdcdc #dcdcdc #dcdcdc; -fx-border-width: 1; -fx-border-radius: 0 0 6 6; -fx-background-radius: 0 0 6 6;");
+        nestedDrawer.setVisible(false);
+        nestedDrawer.setManaged(false);
+
+        Label summary = createDetailsLabel(summaryText);
+        nestedDrawer.getChildren().add(summary);
+
+        for (String option : settingOptions)
+        {
+            Label feature = new Label("• " + option);
+            feature.setWrapText(true);
+            feature.setStyle("-fx-text-fill: #555555; -fx-font-size: 13px;");
+            nestedDrawer.getChildren().add(feature);
+        }
+
+        nestedHeader.setOnMouseEntered(e -> nestedHeader.setStyle("-fx-background-color: #fdfdfd; -fx-border-color: #cfcfcf; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;"));
+        nestedHeader.setOnMouseExited(e -> {
+            if (nestedDrawer.isVisible()) {
+                nestedHeader.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dcdcdc #dcdcdc transparent #dcdcdc; -fx-border-width: 1; -fx-border-radius: 6 6 0 0; -fx-background-radius: 6 6 0 0; -fx-cursor: hand;");
+            } else {
+                nestedHeader.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dcdcdc; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;");
+            }
+        });
+
+        nestedHeader.setOnMouseClicked(event -> {
+            boolean expanded = nestedDrawer.isVisible();
+            nestedDrawer.setVisible(!expanded);
+            nestedDrawer.setManaged(!expanded);
+            nestedArrow.setText(expanded ? "▼" : "▲");
+
+            if (!expanded) {
+                nestedHeader.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dcdcdc #dcdcdc transparent #dcdcdc; -fx-border-width: 1; -fx-border-radius: 6 6 0 0; -fx-background-radius: 6 6 0 0; -fx-cursor: hand;");
+            } else {
+                nestedHeader.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dcdcdc; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;");
+            }
+        });
+
+        nestedSection.getChildren().addAll(nestedHeader, nestedDrawer);
+        return nestedSection;
+    }
+
+    private static Label createDetailsLabel(String detailsText)
+    {
+        Label detailsLabel = new Label(detailsText);
+        detailsLabel.setWrapText(true);
+        detailsLabel.setMaxWidth(Double.MAX_VALUE);
+        detailsLabel.setStyle("-fx-text-fill: #555555; -fx-font-size: 14px; -fx-line-spacing: 3;");
+        return detailsLabel;
     }
 
     public static void main(String[] args) { launch(args); }

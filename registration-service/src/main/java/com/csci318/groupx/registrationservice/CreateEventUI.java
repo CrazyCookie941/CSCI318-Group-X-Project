@@ -15,77 +15,99 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class CreateEventUI extends Application
 {
     @Override
     public void start(Stage primaryStage) {
-        // 1. Root Layout Container
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: #f4f4f4;");
 
-        // 2. Top Navigation Bar
         HBox navBar = Navigation.createNavigationBar(primaryStage);
         root.setTop(navBar);
 
-        // 3. Central Working Area Split (Left Form & Right Media)
-        HBox mainContent = new HBox(40); // 40px spacing between left and right column
+        HBox mainContent = new HBox(40);
         mainContent.setPadding(new Insets(30, 40, 30, 40));
         mainContent.setAlignment(Pos.TOP_CENTER);
 
-        // --- LEFT COLUMN: Form Context ---
         VBox leftColumn = new VBox(20);
-        leftColumn.setMinWidth(450);
+        leftColumn.setMinWidth(500);
 
         Label headerTitle = new Label("Create an event listing");
         headerTitle.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #333333;");
 
-        // Grid Container for aligning form fields perfectly
         GridPane formGrid = new GridPane();
         formGrid.setHgap(15);
         formGrid.setVgap(15);
         formGrid.setAlignment(Pos.TOP_LEFT);
 
-        // Define distinct widths for labels and fields to look uniform
-        ColumnConstraints labelColumn = new ColumnConstraints(120);
-        ColumnConstraints fieldColumn = new ColumnConstraints(300);
+        ColumnConstraints labelColumn = new ColumnConstraints(150);
+        ColumnConstraints fieldColumn = new ColumnConstraints(320);
         formGrid.getColumnConstraints().addAll(labelColumn, fieldColumn);
 
         Label lblTitle = new Label("Event name:");
         TextField txtTitle = new TextField();
         txtTitle.setPromptText("e.g. Radiohead concert");
 
-        // Event Type Control
         Label lblType = new Label("Event type:");
         ComboBox<String> cbEventType = new ComboBox<>();
         cbEventType.getItems().addAll("Concert", "Nightclub", "Conference", "Exhibition", "Festival", "Workshop", "Community", "Games");
         cbEventType.setPromptText("Select event type...");
         cbEventType.setMaxWidth(Double.MAX_VALUE);
 
-        // Event Location Control
         Label lblLocation = new Label("Event location:");
         TextField txtLocation = new TextField();
         txtLocation.setPromptText("Enter venue or online address");
 
-        // Event Price Control
         Label lblPrice = new Label("Event price:");
         TextField txtPrice = new TextField();
         txtPrice.setPromptText("e.g. Free or $25.00");
 
-        // Event Size Control
         Label lblSize = new Label("Event size:");
         TextField txtSize = new TextField();
         txtSize.setPromptText("Maximum attendee capacity");
 
-        // Other Information Control
+        Label lblPayment = new Label("Payment prefs:");
+        ComboBox<String> cbPaymentPreference = new ComboBox<>();
+        cbPaymentPreference.getItems().addAll("Cash", "Card", "Bank transfer", "PayPal", "On arrival", "Split payment");
+        cbPaymentPreference.setPromptText("Select payment method...");
+        cbPaymentPreference.setMaxWidth(Double.MAX_VALUE);
+
         Label lblInfo = new Label("Other information:");
         TextArea txtOtherInfo = new TextArea();
         txtOtherInfo.setPromptText("Provide any extra essential details for attendees...");
-        txtOtherInfo.setPrefRowCount(4);
+        txtOtherInfo.setPrefRowCount(3);
         txtOtherInfo.setWrapText(true);
 
-        // Assign controls sequentially into the grid layout
+        Label lblMiscDocs = new Label("Misc. info docs:");
+        VBox miscDocUpload = new VBox(8);
+        Button btnUploadDocs = new Button("Upload documents");
+        Label lblUploadedDocs = new Label("No misc documents selected");
+        lblUploadedDocs.setWrapText(true);
+        lblUploadedDocs.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+        miscDocUpload.getChildren().addAll(btnUploadDocs, lblUploadedDocs);
+
+        List<String> selectedDocumentPaths = new ArrayList<>();
+        btnUploadDocs.setOnAction(event -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Choose supporting documents");
+            chooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Documents", "*.pdf", "*.doc", "*.docx", "*.txt", "*.csv"),
+                    new FileChooser.ExtensionFilter("All files", "*.*")
+            );
+            List<java.io.File> files = chooser.showOpenMultipleDialog(primaryStage);
+            if (files != null && !files.isEmpty()) {
+                selectedDocumentPaths.clear();
+                for (java.io.File file : files) {
+                    selectedDocumentPaths.add(file.getAbsolutePath());
+                }
+                lblUploadedDocs.setText(String.join(", ", files.stream().map(java.io.File::getName).toList()));
+            }
+        });
+
         formGrid.add(lblTitle, 0, 0);
         formGrid.add(txtTitle, 1, 0);
 
@@ -101,18 +123,22 @@ public class CreateEventUI extends Application
         formGrid.add(lblSize, 0, 4);
         formGrid.add(txtSize, 1, 4);
 
-        formGrid.add(lblInfo, 0, 5);
-        formGrid.add(txtOtherInfo, 1, 5);
+        formGrid.add(lblPayment, 0, 5);
+        formGrid.add(cbPaymentPreference, 1, 5);
+
+        formGrid.add(lblMiscDocs, 0, 6);
+        formGrid.add(miscDocUpload, 1, 6);
+
+        formGrid.add(lblInfo, 0, 7);
+        formGrid.add(txtOtherInfo, 1, 7);
 
         final String[] selectedImage = {null};
 
-        // Submission Button Action
         Button btnSubmit = new Button("Create Listing");
         btnSubmit.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20 10 20; -fx-background-radius: 4;");
 
         btnSubmit.setOnAction(event -> {
-            if (txtTitle.getText().isBlank() || cbEventType.getValue() == null
-                    || txtLocation.getText().isBlank()) {
+            if (txtTitle.getText().isBlank() || cbEventType.getValue() == null || txtLocation.getText().isBlank()) {
                 new Alert(Alert.AlertType.WARNING, "Please provide an event name, type, and location.").showAndWait();
                 return;
             }
@@ -136,7 +162,6 @@ public class CreateEventUI extends Application
 
         leftColumn.getChildren().addAll(headerTitle, formGrid, btnSubmit);
 
-        // --- RIGHT COLUMN: Image Media Handling ---
         VBox rightColumn = new VBox(12);
         rightColumn.setAlignment(Pos.TOP_LEFT);
 
@@ -148,7 +173,6 @@ public class CreateEventUI extends Application
         imagePlaceholderBox.setStyle("-fx-border-color: #cccccc; -fx-border-style: dashed; -fx-border-width: 2; -fx-background-color: #e9e9e9; -fx-border-radius: 6; -fx-background-radius: 6;");
         imagePlaceholderBox.setAlignment(Pos.CENTER);
 
-        // Icon presentation
         Label lblUploadIcon = new Label("Image");
         lblUploadIcon.setStyle("-fx-font-size: 32px;");
         Label lblUploadText = new Label("Choose an event image");
@@ -171,14 +195,23 @@ public class CreateEventUI extends Application
                 imagePlaceholderBox.getChildren().setAll(preview, new Label(chosenFile.getName()));
             }
         });
-        rightColumn.getChildren().addAll(lblPromoImage, imagePlaceholderBox, uploadButton);
 
-        // Combine left column layout and right column layout together inside center container
+        VBox paymentSummary = new VBox(8);
+        paymentSummary.setPadding(new Insets(12));
+        paymentSummary.setStyle("-fx-background-color: #ffffff; -fx-border-color: #d0d0d0; -fx-border-radius: 6; -fx-background-radius: 6;");
+
+        Label lblPaymentSummaryTitle = new Label("Payment preferences");
+        lblPaymentSummaryTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #555555;");
+        CheckBox chkRequiresDeposit = new CheckBox("Require a deposit for registration");
+        chkRequiresDeposit.setSelected(false);
+        paymentSummary.getChildren().addAll(lblPaymentSummaryTitle, chkRequiresDeposit);
+
+        rightColumn.getChildren().addAll(lblPromoImage, imagePlaceholderBox, uploadButton, paymentSummary);
+
         mainContent.getChildren().addAll(leftColumn, rightColumn);
         root.setCenter(mainContent);
 
-        // 4. Initialization of Scene
-        Scene scene = new Scene(root, 880, 520);
+        Scene scene = new Scene(root, 980, 620);
         primaryStage.setTitle("Event Management Workspace");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);

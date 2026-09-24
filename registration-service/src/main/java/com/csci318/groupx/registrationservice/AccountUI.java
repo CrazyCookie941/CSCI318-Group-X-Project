@@ -71,6 +71,27 @@ public class AccountUI extends Application
         profileGrid.add(lblPassword, 0, 3);
         profileGrid.add(passwordFieldBox, 1, 3);
 
+        Label lblTwoFactor = new Label("2FA:");
+        lblTwoFactor.setStyle("-fx-font-size: 14px; -fx-text-fill: #666666; -fx-font-weight: bold;");
+
+        CheckBox chkTwoFactor = new CheckBox("Enable two-factor authentication");
+        chkTwoFactor.setSelected(true);
+        chkTwoFactor.setStyle("-fx-font-size: 13px; -fx-text-fill: #333333;");
+
+        profileGrid.add(lblTwoFactor, 0, 4);
+        profileGrid.add(chkTwoFactor, 1, 4);
+
+        Label lblDeleteAccount = new Label("Delete account:");
+        lblDeleteAccount.setStyle("-fx-font-size: 14px; -fx-text-fill: #666666; -fx-font-weight: bold;");
+
+        Button btnDeleteAccount = new Button("Delete my account");
+        btnDeleteAccount.setStyle("-fx-background-color: #fff1f1; -fx-text-fill: #b00020; -fx-border-color: #d98d8d; -fx-border-radius: 4; -fx-padding: 8 14 8 14; -fx-font-weight: bold; -fx-cursor: hand;");
+        btnDeleteAccount.setOnAction(event ->
+                new Alert(Alert.AlertType.CONFIRMATION, "This action is permanent. Please confirm you want to delete your account.").showAndWait());
+
+        profileGrid.add(lblDeleteAccount, 0, 5);
+        profileGrid.add(btnDeleteAccount, 1, 5);
+
         // Footer Action Trigger Elements
         HBox actionButtons = new HBox(15);
         Button btnSave = new Button("Save Changes");
