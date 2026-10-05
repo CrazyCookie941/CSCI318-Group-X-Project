@@ -22,13 +22,16 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final PasswordHasher passwordHasher;
+    private final DatabaseLogService databaseLogService;
 
     public AccountService(
             AccountRepository accountRepository,
-            PasswordHasher passwordHasher
+            PasswordHasher passwordHasher,
+            DatabaseLogService databaseLogService
     ) {
         this.accountRepository = accountRepository;
         this.passwordHasher = passwordHasher;
+        this.databaseLogService = databaseLogService;
     }
 
     public AuthResponse signup(SignupRequest request) {
@@ -42,6 +45,12 @@ public class AccountService {
                     "Signup rejected because required fields were missing."
             );
 
+            databaseLogService.warn(
+                    "SIGNUP_FAILED",
+                    null,
+                    "Signup rejected because required fields were missing."
+            );
+
             return new AuthResponse(
                     false,
                     "Username, email and password are required.",
@@ -51,16 +60,25 @@ public class AccountService {
             );
         }
 
-        String username = request.getUsername().trim();
-        String email = request.getEmail()
-                .trim()
-                .toLowerCase(Locale.ROOT);
+        String username =
+                request.getUsername().trim();
+
+        String email =
+                request.getEmail()
+                        .trim()
+                        .toLowerCase(Locale.ROOT);
 
         if (accountRepository.existsByUsername(username)) {
 
             logger.warn(
                     "Signup rejected because username '{}' already exists.",
                     username
+            );
+
+            databaseLogService.warn(
+                    "SIGNUP_FAILED",
+                    null,
+                    "Signup rejected because username already exists."
             );
 
             return new AuthResponse(
@@ -79,6 +97,12 @@ public class AccountService {
                     email
             );
 
+            databaseLogService.warn(
+                    "SIGNUP_FAILED",
+                    null,
+                    "Signup rejected because email already exists."
+            );
+
             return new AuthResponse(
                     false,
                     "Email already exists.",
@@ -89,7 +113,9 @@ public class AccountService {
         }
 
         String passwordHash =
-                passwordHasher.hash(request.getPassword());
+                passwordHasher.hash(
+                        request.getPassword()
+                );
 
         Account account =
                 new Account(
@@ -105,6 +131,12 @@ public class AccountService {
                 "Account signup successful. accountId={}, username={}",
                 savedAccount.getId(),
                 savedAccount.getUsername()
+        );
+
+        databaseLogService.info(
+                "ACCOUNT_SIGNUP",
+                savedAccount.getId(),
+                "Account created successfully."
         );
 
         return new AuthResponse(
@@ -126,6 +158,12 @@ public class AccountService {
                     "Login rejected because required fields were missing."
             );
 
+            databaseLogService.warn(
+                    "LOGIN_FAILED",
+                    null,
+                    "Login rejected because required fields were missing."
+            );
+
             return invalidLoginResponse();
         }
 
@@ -144,7 +182,9 @@ public class AccountService {
         } else {
 
             accountOptional =
-                    accountRepository.findByUsername(identifier);
+                    accountRepository.findByUsername(
+                            identifier
+                    );
         }
 
         if (accountOptional.isEmpty()) {
@@ -152,6 +192,12 @@ public class AccountService {
             logger.warn(
                     "Login failed for identifier '{}': account not found.",
                     identifier
+            );
+
+            databaseLogService.warn(
+                    "LOGIN_FAILED",
+                    null,
+                    "Login failed because the account was not found."
             );
 
             return invalidLoginResponse();
@@ -169,6 +215,12 @@ public class AccountService {
                     account.getId()
             );
 
+            databaseLogService.warn(
+                    "LOGIN_FAILED",
+                    account.getId(),
+                    "Login failed because the password was invalid."
+            );
+
             return invalidLoginResponse();
         }
 
@@ -176,6 +228,12 @@ public class AccountService {
                 "Login successful. accountId={}, username={}",
                 account.getId(),
                 account.getUsername()
+        );
+
+        databaseLogService.info(
+                "LOGIN_SUCCESS",
+                account.getId(),
+                "Authentication successful."
         );
 
         return new AuthResponse(
@@ -187,14 +245,17 @@ public class AccountService {
         );
     }
 
-    /*
-     * Loads the full account profile from the database.
-     */
     public AccountProfileResponse getAccountProfile(
             Long accountId
     ) {
 
         if (accountId == null) {
+
+            databaseLogService.warn(
+                    "ACCOUNT_PROFILE_ACCESS_FAILED",
+                    null,
+                    "Account profile access rejected because account ID was invalid."
+            );
 
             return new AccountProfileResponse(
                     false,
@@ -207,13 +268,21 @@ public class AccountService {
         }
 
         Optional<Account> accountOptional =
-                accountRepository.findById(accountId);
+                accountRepository.findById(
+                        accountId
+                );
 
         if (accountOptional.isEmpty()) {
 
             logger.warn(
                     "Account profile access failed. accountId={} not found.",
                     accountId
+            );
+
+            databaseLogService.warn(
+                    "ACCOUNT_PROFILE_ACCESS_FAILED",
+                    accountId,
+                    "Account profile could not be found."
             );
 
             return new AccountProfileResponse(
@@ -235,6 +304,12 @@ public class AccountService {
                 account.getUsername()
         );
 
+        databaseLogService.info(
+                "ACCOUNT_PROFILE_ACCESSED",
+                account.getId(),
+                "Account profile loaded successfully."
+        );
+
         return new AccountProfileResponse(
                 true,
                 "Account profile loaded.",
@@ -245,9 +320,6 @@ public class AccountService {
         );
     }
 
-    /*
-     * Updates username, email and location for an account.
-     */
     public AccountProfileResponse updateAccountProfile(
             Long accountId,
             UpdateAccountRequest request
@@ -262,6 +334,12 @@ public class AccountService {
                     "Account profile update rejected because required fields were missing."
             );
 
+            databaseLogService.warn(
+                    "ACCOUNT_PROFILE_UPDATE_FAILED",
+                    accountId,
+                    "Account profile update rejected because required fields were missing."
+            );
+
             return new AccountProfileResponse(
                     false,
                     "Username and email are required.",
@@ -273,13 +351,21 @@ public class AccountService {
         }
 
         Optional<Account> accountOptional =
-                accountRepository.findById(accountId);
+                accountRepository.findById(
+                        accountId
+                );
 
         if (accountOptional.isEmpty()) {
 
             logger.warn(
                     "Account profile update failed. accountId={} not found.",
                     accountId
+            );
+
+            databaseLogService.warn(
+                    "ACCOUNT_PROFILE_UPDATE_FAILED",
+                    accountId,
+                    "Account profile could not be found."
             );
 
             return new AccountProfileResponse(
@@ -308,11 +394,10 @@ public class AccountService {
                         ? null
                         : request.getLocation().trim();
 
-        /*
-         * Prevent another account from using the same username.
-         */
         Optional<Account> usernameOwner =
-                accountRepository.findByUsername(username);
+                accountRepository.findByUsername(
+                        username
+                );
 
         if (usernameOwner.isPresent()
                 && !usernameOwner.get()
@@ -322,6 +407,12 @@ public class AccountService {
             logger.warn(
                     "Account update rejected. Username '{}' already belongs to another account.",
                     username
+            );
+
+            databaseLogService.warn(
+                    "ACCOUNT_PROFILE_UPDATE_FAILED",
+                    accountId,
+                    "Account update rejected because username already exists."
             );
 
             return new AccountProfileResponse(
@@ -334,11 +425,10 @@ public class AccountService {
             );
         }
 
-        /*
-         * Prevent another account from using the same email.
-         */
         Optional<Account> emailOwner =
-                accountRepository.findByEmail(email);
+                accountRepository.findByEmail(
+                        email
+                );
 
         if (emailOwner.isPresent()
                 && !emailOwner.get()
@@ -348,6 +438,12 @@ public class AccountService {
             logger.warn(
                     "Account update rejected. Email '{}' already belongs to another account.",
                     email
+            );
+
+            databaseLogService.warn(
+                    "ACCOUNT_PROFILE_UPDATE_FAILED",
+                    accountId,
+                    "Account update rejected because email already exists."
             );
 
             return new AccountProfileResponse(
@@ -362,8 +458,10 @@ public class AccountService {
 
         account.setUsername(username);
         account.setEmail(email);
+
         account.setLocation(
-                location == null || location.isBlank()
+                location == null
+                        || location.isBlank()
                         ? null
                         : location
         );
@@ -375,6 +473,12 @@ public class AccountService {
                 "Account profile updated. accountId={}, username={}",
                 savedAccount.getId(),
                 savedAccount.getUsername()
+        );
+
+        databaseLogService.info(
+                "ACCOUNT_PROFILE_UPDATED",
+                savedAccount.getId(),
+                "Account profile updated successfully."
         );
 
         return new AccountProfileResponse(
@@ -400,7 +504,9 @@ public class AccountService {
                 accountId
         );
 
-        return accountRepository.findById(accountId);
+        return accountRepository.findById(
+                accountId
+        );
     }
 
     private AuthResponse invalidLoginResponse() {
@@ -415,6 +521,7 @@ public class AccountService {
     }
 
     private boolean isBlank(String value) {
-        return value == null || value.isBlank();
+        return value == null
+                || value.isBlank();
     }
 }
