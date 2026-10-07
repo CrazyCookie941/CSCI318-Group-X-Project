@@ -8,33 +8,42 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 public class ViewEventUI extends Application {
+    private final EventListing event;
+
+    public ViewEventUI() {
+        this(EventCatalog.getEvents().get(2));
+    }
+
+    public ViewEventUI(EventListing event) {
+        this.event = event;
+    }
 
     @Override
     public void start(Stage primaryStage) {
-        // 1. Root Layout Container
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #fafafa;"); // Clean, bright workspace backdrop
+        root.setStyle("-fx-background-color: #fafafa;");
 
-        // 2. Top Navigation Bar
         HBox navBar = Navigation.createNavigationBar(primaryStage);
         root.setTop(navBar);
 
-        // 3. Central Viewing Container Split
-        HBox mainContent = new HBox(50); // Generous spacing between columns
-        mainContent.setPadding(new Insets(35, 45, 35, 45));
-        mainContent.setAlignment(Pos.TOP_CENTER);
+        VBox pageContent = new VBox(28);
+        pageContent.setPadding(new Insets(35, 45, 35, 45));
 
-        // --- LEFT COLUMN: Read-Only Event Information ---
+        HBox mainContent = new HBox(50);
+        mainContent.setAlignment(Pos.TOP_CENTER);
+        mainContent.setMinHeight(520);
+
         VBox leftColumn = new VBox(25);
         leftColumn.setMinWidth(420);
 
-        Label headerTitle = new Label("View an event listing");
+        Label headerTitle = new Label(event.title());
         headerTitle.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #222222;");
 
-        // Structured display grid for the information fields
         GridPane infoGrid = new GridPane();
         infoGrid.setHgap(20);
         infoGrid.setVgap(18);
@@ -43,35 +52,29 @@ public class ViewEventUI extends Application {
         ColumnConstraints valueColumn = new ColumnConstraints(280);
         infoGrid.getColumnConstraints().addAll(labelColumn, valueColumn);
 
-        // Style strings to separate data labels from factual values cleanly
         String labelStyle = "-fx-font-size: 14px; -fx-text-fill: #666666; -fx-font-weight: bold;";
         String valueStyle = "-fx-font-size: 15px; -fx-text-fill: #111111; -fx-font-weight: normal;";
 
-        // Event Type
         Label lblType = new Label("Event type:");
         lblType.setStyle(labelStyle);
-        Label valType = new Label("Community barbecue");
+        Label valType = new Label(event.type());
         valType.setStyle(valueStyle);
 
-        // Event Location
         Label lblLocation = new Label("Event location:");
         lblLocation.setStyle(labelStyle);
-        Label valLocation = new Label("Sydney Central Park");
+        Label valLocation = new Label(event.location());
         valLocation.setStyle(valueStyle);
 
-        // Event Price
         Label lblPrice = new Label("Event price:");
         lblPrice.setStyle(labelStyle);
-        Label valPrice = new Label("$15");
+        Label valPrice = new Label(event.price());
         valPrice.setStyle(valueStyle);
 
-        // Event Size
         Label lblSize = new Label("Event size:");
         lblSize.setStyle(labelStyle);
-        Label valSize = new Label("Medium");
+        Label valSize = new Label(event.size());
         valSize.setStyle(valueStyle);
 
-        // Map components sequentially to the presentation grid
         infoGrid.add(lblType, 0, 0);
         infoGrid.add(valType, 1, 0);
         infoGrid.add(lblLocation, 0, 1);
@@ -81,22 +84,19 @@ public class ViewEventUI extends Application {
         infoGrid.add(lblSize, 0, 3);
         infoGrid.add(valSize, 1, 3);
 
-        // Separate container for multi-line description text block
         VBox descriptionBox = new VBox(8);
         Label lblInfo = new Label("Other information:");
         lblInfo.setStyle(labelStyle);
 
-        Label valInfo = new Label("Fun lunch for family and friends. All food and refreshments are included with your ticket price entry.");
+        Label valInfo = new Label(event.description());
         valInfo.setWrapText(true);
         valInfo.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333; -fx-line-spacing: 4;");
-        // Styled container panel behind text for readability
         valInfo.setPadding(new Insets(12));
         valInfo.setStyle(valInfo.getStyle() + "-fx-background-color: #ededed; -fx-background-radius: 6;");
         valInfo.setMaxWidth(400);
 
         descriptionBox.getChildren().addAll(lblInfo, valInfo);
 
-        // Navigation Footer Action Buttons appropriate for viewing an item
         HBox actionButtons = new HBox(15);
         Button btnRegister = new Button("Register for Event");
         btnRegister.setStyle("-fx-background-color: #2e7d32; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20 10 20; -fx-background-radius: 4; -fx-cursor: hand;");
@@ -104,19 +104,17 @@ public class ViewEventUI extends Application {
 
         Button btnBack = new Button("Back to Listings");
         btnBack.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 10 20 10 20; -fx-cursor: hand;");
-        btnBack.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new DashboardUI().start(nextStage)));
+        btnBack.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new MyListingsEventGoer().start(nextStage)));
 
         actionButtons.getChildren().addAll(btnRegister, btnBack);
         leftColumn.getChildren().addAll(headerTitle, infoGrid, descriptionBox, actionButtons);
 
-        // --- RIGHT COLUMN: Image Graphic Presentation ---
         VBox rightColumn = new VBox(12);
         rightColumn.setAlignment(Pos.TOP_LEFT);
 
         Label lblImages = new Label("Images:");
         lblImages.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #666666;");
 
-        // Graphical Image Element Container
         StackPane imageFrame = new StackPane();
         imageFrame.setStyle("-fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-background-color: #f0f0f0; -fx-background-radius: 8; -fx-border-radius: 8;");
         imageFrame.setPrefSize(340, 240);
@@ -124,34 +122,145 @@ public class ViewEventUI extends Application {
         ImageView eventImageView = new ImageView();
         eventImageView.setFitWidth(338);
         eventImageView.setFitHeight(238);
-        eventImageView.setPreserveRatio(false); // Fills frame box area uniformly
+        eventImageView.setPreserveRatio(false);
 
-        // Note: Safe structural fall-back text loader layer shown if graphic asset fails to render
-        Label imagePlaceholderText = new Label("[ Event Cover Image ]");
+        Label imagePlaceholderText = new Label("No event image available");
         imagePlaceholderText.setStyle("-fx-text-fill: #999999; -fx-font-style: italic;");
         imageFrame.getChildren().addAll(imagePlaceholderText, eventImageView);
 
-        // URL fallback placeholder logic loading the real image context example smoothly
         try {
-            // Loading placeholder web building graphic to stand-in for the event structure
-            Image img = new Image("https://unsplash.com", true);
+            Image img = event.imageLocation().startsWith("/")
+                    ? new Image(getClass().getResource(event.imageLocation()).toExternalForm())
+                    : new Image(java.nio.file.Path.of(event.imageLocation()).toUri().toString());
             eventImageView.setImage(img);
-        } catch (Exception e) {
-            System.out.println("Could not download placeholder remote asset image.");
+            imagePlaceholderText.setVisible(false);
+        } catch (IllegalArgumentException e) {
+            imagePlaceholderText.setVisible(true);
         }
 
-        rightColumn.getChildren().addAll(lblImages, imageFrame);
+        VBox mapSection = new VBox(8);
+        Label lblMap = new Label("Map:");
+        lblMap.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #666666;");
 
-        // Combine left information data side and right graphical image panels
+        Pane mapPanel = new Pane();
+        mapPanel.setPrefSize(340, 180);
+        mapPanel.setMinSize(340, 180);
+        mapPanel.setMaxSize(340, 180);
+        mapPanel.setStyle("-fx-background-color: linear-gradient(to bottom, #eaf7ea, #dfeee6); -fx-border-color: #b7d7a8; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8;");
+        mapPanel.setClip(new Rectangle(340, 180));
+
+        mapPanel.getChildren().addAll(
+                createRoadLine(0, 42, 340, 42, 8),
+                createRoadLine(0, 105, 340, 105, 8),
+                createRoadLine(72, 0, 72, 180, 7),
+                createRoadLine(230, 0, 230, 180, 7),
+                createRoadLine(-10, 155, 350, 15, 5),
+                createLocationMarker(170, 87, event.location())
+        );
+
+        mapSection.getChildren().addAll(lblMap, mapPanel);
+        rightColumn.getChildren().addAll(lblImages, imageFrame, mapSection);
+
         mainContent.getChildren().addAll(leftColumn, rightColumn);
-        root.setCenter(mainContent);
 
-        // 4. Set Scene
-        Scene scene = new Scene(root, 1024, 576);
+        Label recTitle = new Label("Recommended listings");
+        recTitle.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #222222;");
+
+        HBox recRow = new HBox(16);
+        recRow.setAlignment(Pos.CENTER_LEFT);
+
+        EventCatalog.getEvents().stream()
+                .filter(item -> !item.title().equals(event.title()))
+                .limit(3)
+                .forEach(item -> recRow.getChildren().add(createRecommendationCard(item, primaryStage)));
+
+        VBox recommendedSection = new VBox(12);
+        recommendedSection.setPadding(new Insets(4, 0, 12, 0));
+        recommendedSection.setStyle("-fx-border-color: #e0e0e0; -fx-border-width: 1 0 0 0;");
+        recommendedSection.getChildren().addAll(recTitle, recRow);
+
+        pageContent.getChildren().addAll(mainContent, recommendedSection);
+
+        ScrollPane scrollPane = new ScrollPane(pageContent);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+
+        root.setCenter(scrollPane);
+
+        Scene scene = new Scene(root, 940, 780);
         primaryStage.setTitle("Event details workspace view");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
         primaryStage.show();
+    }
+
+    private VBox createRecommendationCard(EventListing item, Stage stage) {
+        VBox card = new VBox(8);
+        card.setMinSize(200, 215);
+        card.setPrefSize(200, 215);
+        card.setPadding(new Insets(10));
+        card.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.04), 4, 0, 0, 2);");
+
+        ImageView imageView = new ImageView();
+        imageView.setFitWidth(180);
+        imageView.setFitHeight(90);
+        imageView.setPreserveRatio(false);
+
+        try {
+            Image img = item.imageLocation().startsWith("/")
+                    ? new Image(getClass().getResource(item.imageLocation()).toExternalForm())
+                    : new Image(java.nio.file.Path.of(item.imageLocation()).toUri().toString());
+            imageView.setImage(img);
+        } catch (IllegalArgumentException ignored) {
+            imageView.setStyle("-fx-background-color: #eeeeee; -fx-border-color: #cccccc; -fx-border-radius: 6; -fx-background-radius: 6;");
+        }
+
+        Label title = new Label(item.title());
+        title.setWrapText(true);
+        title.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #222222;");
+
+        Label location = new Label(item.location());
+        location.setStyle("-fx-font-size: 12px; -fx-text-fill: #666666;");
+
+        Button button = new Button("View");
+        button.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 6 12 6 12; -fx-background-radius: 4; -fx-cursor: hand;");
+        button.setOnAction(event -> Navigation.goTo(stage, nextStage -> new ViewEventUI(item).start(nextStage)));
+
+        card.getChildren().addAll(imageView, title, location, button);
+        return card;
+    }
+
+    private Line createRoadLine(double startX, double startY, double endX, double endY, double width) {
+        Line line = new Line(startX, startY, endX, endY);
+        line.setStroke(javafx.scene.paint.Color.web("#d2d5d3"));
+        line.setStrokeWidth(width);
+        line.setOpacity(0.8);
+        return line;
+    }
+
+    private StackPane createLocationMarker(double x, double y, String labelText) {
+        StackPane marker = new StackPane();
+        marker.setLayoutX(x - 12);
+        marker.setLayoutY(y - 12);
+        marker.setPrefSize(24, 24);
+        marker.setStyle("-fx-background-color: #d32f2f; -fx-background-radius: 12; -fx-border-radius: 12; -fx-border-color: white; -fx-border-width: 2;");
+
+        Label pin = new Label("📍");
+        pin.setStyle("-fx-font-size: 11px;");
+        marker.getChildren().add(pin);
+
+        Label locationLabel = new Label(labelText);
+        locationLabel.setMaxWidth(150);
+        locationLabel.setWrapText(true);
+        locationLabel.setStyle("-fx-background-color: rgba(255,255,255,0.9); -fx-background-radius: 4; -fx-padding: 3 6; -fx-font-size: 11px; -fx-text-fill: #444444; -fx-font-weight: bold;");
+        locationLabel.setTranslateY(28);
+        locationLabel.setTranslateX(38);
+        marker.getChildren().add(locationLabel);
+
+        return marker;
     }
 
     public static void main(String[] args) {

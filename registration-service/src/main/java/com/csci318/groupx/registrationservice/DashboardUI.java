@@ -16,7 +16,7 @@ public class DashboardUI extends Application
     /**
      * Creates a scalable visual card frame containing a responsive ImageView component
      */
-    private StackPane createScalableImageCard(String path)
+    private StackPane createEventCard(EventListing event, Stage stage)
     {
         StackPane containerCard = new StackPane();
         containerCard.setMinSize(160, 110); // Floor safety boundary size
@@ -37,15 +37,33 @@ public class DashboardUI extends Application
         containerCard.setStyle("-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 4, 0, 0, 2);");
 
         try {
-            Image image = new Image(getClass().getResource(path).toExternalForm());
+            Image image = loadImage(event.imageLocation());
             imageView.setImage(image);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             // Safe graphical error visual frame
             containerCard.setStyle(containerCard.getStyle() + "-fx-background-color: #ededed; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4;");
         }
 
+        Label title = new Label(event.title());
+        title.setMaxWidth(Double.MAX_VALUE);
+        title.setAlignment(Pos.CENTER);
+        title.setStyle("-fx-background-color: rgba(0,0,0,0.72); -fx-text-fill: white; "
+                + "-fx-font-weight: bold; -fx-padding: 8; -fx-font-size: 13px;");
+        StackPane.setAlignment(title, Pos.BOTTOM_CENTER);
         containerCard.getChildren().add(imageView);
+        containerCard.getChildren().add(title);
+        containerCard.setOnMouseClicked(click -> Navigation.goTo(stage,
+                nextStage -> new ViewEventUI(event).start(nextStage)));
+        containerCard.setStyle(containerCard.getStyle() + "-fx-cursor: hand;");
         return containerCard;
+    }
+
+    private Image loadImage(String location)
+    {
+        if (location.startsWith("/")) {
+            return new Image(getClass().getResource(location).toExternalForm());
+        }
+        return new Image(java.nio.file.Path.of(location).toUri().toString());
     }
 
     @Override
@@ -70,7 +88,7 @@ public class DashboardUI extends Application
         filtersTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #222222; -fx-padding: 0 0 5 0;");
 
         ComboBox<String> locationBox = createStyledComboBox("Any location", "Wollongong", "Melbourne", "Sydney", "Brisbane");
-        ComboBox<String> typeBox = createStyledComboBox("Any type", "Conference", "Workshop", "Concert");
+        ComboBox<String> typeBox = createStyledComboBox("Any type", "Conference", "Workshop", "Concert", "Nightclub", "Exhibition", "Community", "Games");
         ComboBox<String> priceBox = createStyledComboBox("Any price", "Free", "Under $50", "Over $50");
         ComboBox<String> sizeBox = createStyledComboBox("Any size", "Small", "Medium", "Large");
 
@@ -127,12 +145,20 @@ public class DashboardUI extends Application
         nextButton.setStyle(arrowStyle);
 
         // Construct flexible container frames instead of standard fixed ImageViews
-        StackPane card1 = createScalableImageCard("/Images/images.jpeg");
-        StackPane card2 = createScalableImageCard("/Images/istockphoto-964136996-612x612.jpg");
-        StackPane card3 = createScalableImageCard("/Images/event-ideas-for-party-eventbookings.jpeg");
+        java.util.List<EventListing> events = EventCatalog.getEvents();
+        StackPane card1 = createEventCard(events.get(0), stage);
+        StackPane card2 = createEventCard(events.get(1), stage);
+        StackPane card3 = createEventCard(events.get(2), stage);
+        StackPane card4 = createEventCard(events.get(3), stage);
 
-        carouselContainer.getChildren().addAll(previousButton, card1, card2, card3, nextButton);
-        carouselSection.getChildren().addAll(lblFeatured, carouselContainer);
+        carouselContainer.getChildren().addAll(previousButton, card1, card2, card3, card4, nextButton);
+        ScrollPane eventScroller = new ScrollPane(carouselContainer);
+        eventScroller.setFitToHeight(true);
+        eventScroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        eventScroller.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        eventScroller.setPrefViewportHeight(150);
+        eventScroller.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        carouselSection.getChildren().addAll(lblFeatured, eventScroller);
 
         centerContentStack.getChildren().addAll(searchBarRow, carouselSection);
 

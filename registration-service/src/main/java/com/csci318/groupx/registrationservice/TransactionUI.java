@@ -45,9 +45,11 @@ public class TransactionUI extends Application
         ColumnConstraints fieldColumn = new ColumnConstraints(290);
         checkoutGrid.getColumnConstraints().addAll(labelColumn, fieldColumn);
 
-        // Add core standard billing text inputs
-        addFormField(checkoutGrid, 0, "Cardholder Name:", new TextField(), "John Citizen");
-        addFormField(checkoutGrid, 1, "Card Number:", new TextField(), "4111 2222 3333 4444");
+        // Add customer and billing details
+        addFormField(checkoutGrid, 0, "Name:", new TextField(), "John Citizen");
+        addFormField(checkoutGrid, 1, "Address:", new TextField(), "123 Example Street");
+        addFormField(checkoutGrid, 2, "Phone Number:", new TextField(), "+61 400 000 000");
+        addFormField(checkoutGrid, 3, "Card Number:", new TextField(), "4111 2222 3333 4444");
 
         // Expiry & CVV combined inline sub-row block
         Label lblExpiration = new Label("Expiration Date:");
@@ -72,8 +74,22 @@ public class TransactionUI extends Application
         secureShieldIcon.setStyle("-fx-text-fill: #2e7d32; -fx-font-size: 13px; -fx-font-weight: bold;");
 
         expiryAndCvvRow.getChildren().addAll(txtExpiry, txtCvv, secureShieldIcon);
-        checkoutGrid.add(lblExpiration, 0, 2);
-        checkoutGrid.add(expiryAndCvvRow, 1, 2);
+        checkoutGrid.add(lblExpiration, 0, 4);
+        checkoutGrid.add(expiryAndCvvRow, 1, 4);
+
+        // Radio buttons share a toggle group so only one payment provider can be selected
+        Label lblPaymentProvider = new Label("Payment Provider:");
+        lblPaymentProvider.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #666666;");
+
+        ToggleGroup paymentProviderGroup = new ToggleGroup();
+        RadioButton visaOption = createPaymentProviderOption("Visa", paymentProviderGroup);
+        RadioButton mastercardOption = createPaymentProviderOption("Mastercard", paymentProviderGroup);
+        RadioButton paypalOption = createPaymentProviderOption("PayPal", paymentProviderGroup);
+
+        HBox paymentProviderOptions = new HBox(18, visaOption, mastercardOption, paypalOption);
+        paymentProviderOptions.setAlignment(Pos.CENTER_LEFT);
+        checkoutGrid.add(lblPaymentProvider, 0, 5);
+        checkoutGrid.add(paymentProviderOptions, 1, 5);
 
         // Action Buttons corresponding to the workspace context
         HBox actionButtons = new HBox(15);
@@ -149,6 +165,14 @@ public class TransactionUI extends Application
 
         grid.add(label, 0, row);
         grid.add(field, 1, row);
+    }
+
+    private static RadioButton createPaymentProviderOption(String provider, ToggleGroup group)
+    {
+        RadioButton option = new RadioButton(provider);
+        option.setToggleGroup(group);
+        option.setStyle("-fx-font-size: 13px; -fx-text-fill: #444444;");
+        return option;
     }
 
     private static BorderPane createSummaryRow(String labelText, String valText)
