@@ -10,6 +10,8 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 
+import java.util.Objects;
+
 public class DashboardUI extends Application
 {
 
@@ -58,10 +60,78 @@ public class DashboardUI extends Application
         return containerCard;
     }
 
+    /**
+     * Generates a clean vertical list layout container for rendering matching queries
+     */
+    private VBox createSearchResultsSection(java.util.List<EventListing> events, Stage stage) {
+        VBox searchResultsSection = new VBox(15);
+        searchResultsSection.setPadding(new Insets(10, 0, 0, 0));
+        searchResultsSection.setAlignment(Pos.TOP_LEFT);
+        searchResultsSection.setMaxWidth(Double.MAX_VALUE);
+        VBox.setVgrow(searchResultsSection, Priority.ALWAYS);
+
+        Label searchTitle = new Label("Search Results");
+        searchTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #222222;");
+
+        VBox resultsListContainer = new VBox(12);
+        resultsListContainer.setMaxWidth(Double.MAX_VALUE);
+
+        // Map live catalog entries smoothly into individual left-aligned row layouts
+        for (EventListing event : events) {
+            resultsListContainer.getChildren().add(createSearchResultRow(event, stage));
+        }
+
+        searchResultsSection.getChildren().addAll(searchTitle, resultsListContainer);
+        return searchResultsSection;
+    }
+
+    /**
+     * Builds a left-aligned row wrapper structure utilizing an identical card theme layout
+     */
+    private BorderPane createSearchResultRow(EventListing event, Stage stage) {
+        BorderPane rowCard = new BorderPane();
+        rowCard.setPadding(new Insets(14, 20, 14, 20));
+        rowCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.01), 4, 0, 0, 1);");
+        rowCard.setMaxWidth(Double.MAX_VALUE);
+
+        // Left Partition Text Layout
+        VBox textStack = new VBox(4);
+        textStack.setAlignment(Pos.CENTER_LEFT);
+
+        Label titleLabel = new Label(event.title());
+        titleLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #222222;");
+
+        Label detailsLabel = new Label("Category Tiers: " + event.type() + " • Real-time Admission Portals Open");
+        detailsLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #666666;");
+
+        textStack.getChildren().addAll(titleLabel, detailsLabel);
+
+        HBox leftWrapper = new HBox(textStack);
+        leftWrapper.setAlignment(Pos.CENTER_LEFT);
+        rowCard.setLeft(leftWrapper); // Anchors heading text elements strictly against the absolute left edge
+
+        // Right Partition View Action Trigger Layout
+        Button btnView = new Button("View Listing");
+        btnView.setPrefWidth(110);
+        btnView.setPrefHeight(32);
+        btnView.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;");
+
+        btnView.setOnMouseEntered(e -> btnView.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
+        btnView.setOnMouseExited(e -> btnView.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
+
+        btnView.setOnAction(eventAction -> Navigation.goTo(stage, nextStage -> new ViewEventUI(event).start(nextStage)));
+
+        HBox rightWrapper = new HBox(btnView);
+        rightWrapper.setAlignment(Pos.CENTER_RIGHT);
+        rowCard.setRight(rightWrapper); // Anchors primary button actions strictly against the absolute right edge
+
+        return rowCard;
+    }
+
     private Image loadImage(String location)
     {
         if (location.startsWith("/")) {
-            return new Image(getClass().getResource(location).toExternalForm());
+            return new Image(Objects.requireNonNull(getClass().getResource(location)).toExternalForm());
         }
         return new Image(java.nio.file.Path.of(location).toUri().toString());
     }
@@ -138,8 +208,6 @@ public class DashboardUI extends Application
         carouselContainer.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(carouselContainer, Priority.ALWAYS); // Expand entire bar block horizontally
 
-        String arrowStyle = "-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 20; -fx-background-radius: 20; -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #555555; -fx-pref-width: 36; -fx-pref-height: 36; -fx-min-width: 36; -fx-cursor: hand;";
-
         // Construct flexible container frames instead of standard fixed ImageViews
         java.util.List<EventListing> events = EventCatalog.getEvents();
         StackPane card1 = createEventCard(events.get(0), stage);
@@ -156,7 +224,28 @@ public class DashboardUI extends Application
         eventScroller.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
         carouselSection.getChildren().addAll(lblFeatured, eventScroller);
 
+        // Build the Search Results container layout panel out-of-view initially
+        VBox searchResultsSection = createSearchResultsSection(events, stage);
+
+        // Add only the default visible items to the layout container view on launch
         centerContentStack.getChildren().addAll(searchBarRow, carouselSection);
+
+        // REAL-TIME LISTENER: Instantly swaps between Carousel and Search Results lists
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null || newValue.trim().isEmpty()) {
+                // If search field is empty, show the Recommendations Carousel section
+                centerContentStack.getChildren().remove(searchResultsSection);
+                if (!centerContentStack.getChildren().contains(carouselSection)) {
+                    centerContentStack.getChildren().add(carouselSection);
+                }
+            } else {
+                // If user is typing, replace it with the Search Results rows section
+                centerContentStack.getChildren().remove(carouselSection);
+                if (!centerContentStack.getChildren().contains(searchResultsSection)) {
+                    centerContentStack.getChildren().add(searchResultsSection);
+                }
+            }
+        });
 
         // ScrollPane Setup Layer
         ScrollPane scrollWrapper = new ScrollPane(centerContentStack);
