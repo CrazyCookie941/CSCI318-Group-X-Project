@@ -20,20 +20,7 @@ public class AttendeeDetailsUI extends Application
         layout.setStyle("-fx-background-color: #fafafa;"); // Modern light canvas backdrop
 
         // 2. Styled Top Navigation Bar
-        HBox navigationBar = new HBox();
-        navigationBar.setPadding(new Insets(12, 24, 12, 24));
-        navigationBar.setSpacing(20);
-        navigationBar.setAlignment(Pos.CENTER_LEFT);
-        navigationBar.setStyle("-fx-background-color: #1a1a1a;");
-
-        Hyperlink homeLink = createNavigationLink("Home");
-        Hyperlink eventsLink = createNavigationLink("My events");
-        Hyperlink accountLink = createNavigationLink("Account");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        navigationBar.getChildren().addAll(homeLink, eventsLink, spacer, accountLink);
+        HBox navigationBar = Navigation.createNavigationBar(stage);
         layout.setTop(navigationBar);
 
         // 3. Central Working Content Pane (Form Left, Event Info Right)

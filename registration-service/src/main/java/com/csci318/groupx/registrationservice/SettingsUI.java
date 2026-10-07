@@ -68,7 +68,7 @@ public class SettingsUI extends Application
 
         // 5. Stage Initialization Settings
         stage.setTitle("Application Settings");
-        stage.setScene(new Scene(layout, 1020, 580)); // Matching design width geometry safely
+        stage.setScene(new Scene(layout, 1024, 576)); // Matching design width geometry safely
         stage.show();
     }
 

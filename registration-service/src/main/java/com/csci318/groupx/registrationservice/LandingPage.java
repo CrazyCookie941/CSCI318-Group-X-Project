@@ -84,7 +84,7 @@ public class LandingPage extends javafx.application.Application
         root.getChildren().addAll(hero, features);
 
         stage.setTitle("Welcome to EventGuide AI Platform");
-        stage.setScene(new Scene(root, 960, 560));
+        stage.setScene(new Scene(root, 1024, 576));
         stage.show();
     }
 

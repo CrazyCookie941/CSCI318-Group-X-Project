@@ -105,7 +105,13 @@ final class Navigation
             goTo(stage, nextStage -> new SettingsUI().start(nextStage));
         });
 
-        menu.getChildren().addAll(accountButton, settingsButton);
+        Button logOutButton = createPopupButton("Log Out");
+        logOutButton.setOnAction(event -> {
+            closePopup(menu);
+            goTo(stage, nextStage -> new IntroUI().start(nextStage));
+        });
+
+        menu.getChildren().addAll(accountButton, settingsButton, logOutButton);
         showPopup(menu, profileButton);
     }
 

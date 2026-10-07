@@ -70,7 +70,7 @@ public class IntroUI extends Application {
         root.getChildren().addAll(heroContainer, featuresGrid);
 
         // 4. Scene Presentation
-        Scene scene = new Scene(root, 960, 560);
+        Scene scene = new Scene(root, 1024, 576);
         primaryStage.setTitle("Welcome to EventGuide AI Platform");
         primaryStage.setScene(scene);
         primaryStage.show();

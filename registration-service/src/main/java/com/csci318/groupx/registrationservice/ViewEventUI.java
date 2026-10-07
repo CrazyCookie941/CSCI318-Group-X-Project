@@ -147,7 +147,7 @@ public class ViewEventUI extends Application {
         root.setCenter(mainContent);
 
         // 4. Set Scene
-        Scene scene = new Scene(root, 900, 540);
+        Scene scene = new Scene(root, 1024, 576);
         primaryStage.setTitle("Event details workspace view");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);

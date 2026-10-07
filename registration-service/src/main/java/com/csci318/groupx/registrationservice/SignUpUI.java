@@ -60,10 +60,6 @@ public class SignUpUI extends Application
         passwordField.setMaxWidth(Double.MAX_VALUE);
         passwordField.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 12; -fx-font-size: 14px;");
 
-        // Form Control Options
-        CheckBox rememberMe = new CheckBox("Remember me");
-        rememberMe.setStyle("-fx-font-size: 13px; -fx-text-fill: #555555; -fx-cursor: hand;");
-
         // Premium Primary Blue Action Button
         Button signUpButton = new Button("Sign Up");
         signUpButton.setPrefHeight(40);
@@ -104,7 +100,6 @@ public class SignUpUI extends Application
                 headersBlock,
                 emailField,
                 passwordField,
-                rememberMe,
                 signUpButton,
                 accountRow,
                 message
@@ -114,7 +109,7 @@ public class SignUpUI extends Application
 
         // 3. Stage Presentation Sizing
         stage.setTitle("Create Account");
-        stage.setScene(new Scene(rootLayout, 640, 540)); // Dimensions tracking clean window layout metrics
+        stage.setScene(new Scene(rootLayout, 1024, 576)); // Dimensions tracking clean window layout metrics
         stage.setResizable(false);
         stage.show();
     }

@@ -123,7 +123,7 @@ public class CreateEventUI extends Application
         root.setCenter(mainContent);
 
         // 4. Initialization of Scene
-        Scene scene = new Scene(root, 880, 520);
+        Scene scene = new Scene(root, 1024, 576);
         primaryStage.setTitle("Event Management Workspace");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);

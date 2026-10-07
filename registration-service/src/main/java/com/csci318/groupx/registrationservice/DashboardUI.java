@@ -151,7 +151,7 @@ public class DashboardUI extends Application
         // 5. Stage Setup and Launch Sizing
         stage.setTitle("Event Discovery Dashboard");
 
-        Scene scene = new Scene(rootLayout, 1050, 580);
+        Scene scene = new Scene(rootLayout, 1024, 576);
         stage.setScene(scene);
         stage.setMinWidth(750);
         stage.setMinHeight(480);
