@@ -46,10 +46,7 @@ public class TransactionUI extends Application
         checkoutGrid.getColumnConstraints().addAll(labelColumn, fieldColumn);
 
         // Add customer and billing details
-        addFormField(checkoutGrid, 0, "Name:", new TextField(), "John Citizen");
-        addFormField(checkoutGrid, 1, "Address:", new TextField(), "123 Example Street");
-        addFormField(checkoutGrid, 2, "Phone Number:", new TextField(), "+61 400 000 000");
-        addFormField(checkoutGrid, 3, "Card Number:", new TextField(), "4111 2222 3333 4444");
+        addFormField(checkoutGrid, 0, "Card Number:", new TextField(), "4111 2222 3333 4444");
 
         // Expiry & CVV combined inline sub-row block
         Label lblExpiration = new Label("Expiration Date:");
@@ -74,8 +71,8 @@ public class TransactionUI extends Application
         secureShieldIcon.setStyle("-fx-text-fill: #2e7d32; -fx-font-size: 13px; -fx-font-weight: bold;");
 
         expiryAndCvvRow.getChildren().addAll(txtExpiry, txtCvv, secureShieldIcon);
-        checkoutGrid.add(lblExpiration, 0, 4);
-        checkoutGrid.add(expiryAndCvvRow, 1, 4);
+        checkoutGrid.add(lblExpiration, 0, 1);
+        checkoutGrid.add(expiryAndCvvRow, 1, 1);
 
         // Radio buttons share a toggle group so only one payment provider can be selected
         Label lblPaymentProvider = new Label("Payment Provider:");
@@ -88,8 +85,8 @@ public class TransactionUI extends Application
 
         HBox paymentProviderOptions = new HBox(18, visaOption, mastercardOption, paypalOption);
         paymentProviderOptions.setAlignment(Pos.CENTER_LEFT);
-        checkoutGrid.add(lblPaymentProvider, 0, 5);
-        checkoutGrid.add(paymentProviderOptions, 1, 5);
+        checkoutGrid.add(lblPaymentProvider, 0, 2);
+        checkoutGrid.add(paymentProviderOptions, 1, 2);
 
         // Action Buttons corresponding to the workspace context
         HBox actionButtons = new HBox(15);

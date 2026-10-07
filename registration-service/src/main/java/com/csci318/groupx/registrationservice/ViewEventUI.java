@@ -100,7 +100,7 @@ public class ViewEventUI extends Application {
         HBox actionButtons = new HBox(15);
         Button btnRegister = new Button("Register for Event");
         btnRegister.setStyle("-fx-background-color: #2e7d32; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20 10 20; -fx-background-radius: 4; -fx-cursor: hand;");
-        btnRegister.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new TransactionUI().start(nextStage)));
+        btnRegister.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new AttendeeDetailsUI().start(nextStage)));
 
         Button btnBack = new Button("Back to Listings");
         btnBack.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 10 20 10 20; -fx-cursor: hand;");

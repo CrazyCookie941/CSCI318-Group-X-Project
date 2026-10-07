@@ -47,7 +47,8 @@ public class AttendeeDetailsUI extends Application
 
         // Form Fields
         addFormField(formGrid, 0, "Full Name:", new TextField(), "Enter attendee name");
-        addFormField(formGrid, 1, "Contact Phone:", new TextField(), "e.g. +61 400 000 000");
+        addFormField(formGrid, 1, "Address:", new TextField(), "Enter address");
+        addFormField(formGrid, 2, "Contact Phone:", new TextField(), "e.g. +61 400 000 000");
 
         // Ticket Type Dropdown selection
         Label lblTicketType = new Label("Ticket Option:");
@@ -60,8 +61,8 @@ public class AttendeeDetailsUI extends Application
         cbTicket.setPrefHeight(34);
         cbTicket.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 13px;");
 
-        formGrid.add(lblTicketType, 0, 2);
-        formGrid.add(cbTicket, 1, 2);
+        formGrid.add(lblTicketType, 0, 3);
+        formGrid.add(cbTicket, 1, 3);
 
         // Multi-line Special Request entry block
         Label lblRequirements = new Label("Dietary / Access:");
@@ -73,8 +74,8 @@ public class AttendeeDetailsUI extends Application
         txtRequirements.setWrapText(true);
         txtRequirements.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 6; -fx-font-size: 14px;");
 
-        formGrid.add(lblRequirements, 0, 3);
-        formGrid.add(txtRequirements, 1, 3);
+        formGrid.add(lblRequirements, 0, 4);
+        formGrid.add(txtRequirements, 1, 4);
 
         // Action Buttons Grouping
         HBox actionButtons = new HBox(15);
@@ -84,6 +85,7 @@ public class AttendeeDetailsUI extends Application
         btnProceed.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 26 11 26; -fx-background-radius: 4; -fx-font-size: 14px; -fx-cursor: hand;");
         btnProceed.setOnMouseEntered(e -> btnProceed.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 26 11 26; -fx-background-radius: 4; -fx-font-size: 14px; -fx-cursor: hand;"));
         btnProceed.setOnMouseExited(e -> btnProceed.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 26 11 26; -fx-background-radius: 4; -fx-font-size: 14px; -fx-cursor: hand;"));
+        btnProceed.setOnAction(event -> Navigation.goTo(stage, nextStage -> new TransactionUI().start(nextStage)));
 
         Button btnBack = new Button("Back");
         btnBack.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 11 24 11 24; -fx-font-size: 14px; -fx-cursor: hand;");
