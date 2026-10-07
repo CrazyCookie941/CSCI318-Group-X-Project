@@ -67,7 +67,7 @@ public class MyListingsEventGoer extends Application
 
         // 5. Stage Initialization Settings
         stage.setTitle("Event Admissions Workspace");
-        stage.setScene(new Scene(layout, 1024, 576));
+        stage.setScene(new Scene(layout, 1366, 768));
         stage.show();
     }
 

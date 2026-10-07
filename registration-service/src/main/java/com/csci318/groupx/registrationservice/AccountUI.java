@@ -133,7 +133,7 @@ public class AccountUI extends Application
 
         // 4. Stage Presentation
         stage.setTitle("Account profile");
-        stage.setScene(new Scene(layout, 1024, 576)); // Adjusted layout sizing for two columns
+        stage.setScene(new Scene(layout, 1366, 768)); // Adjusted layout sizing for two columns
         stage.setResizable(false);
         stage.show();
     }

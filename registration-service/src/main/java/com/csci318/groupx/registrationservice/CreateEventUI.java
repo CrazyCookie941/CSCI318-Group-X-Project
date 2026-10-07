@@ -211,7 +211,7 @@ public class CreateEventUI extends Application
         mainContent.getChildren().addAll(leftColumn, rightColumn);
         root.setCenter(mainContent);
 
-        Scene scene = new Scene(root, 980, 620);
+        Scene scene = new Scene(root, 1366, 768);
         primaryStage.setTitle("Event Management Workspace");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);

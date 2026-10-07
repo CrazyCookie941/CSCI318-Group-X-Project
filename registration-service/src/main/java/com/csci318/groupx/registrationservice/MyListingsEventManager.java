@@ -76,7 +76,7 @@ public class MyListingsEventManager extends Application
 
         // 5. Stage Initialization Settings
         stage.setTitle("Organiser Administration Console");
-        stage.setScene(new Scene(layout, 1020, 560));
+        stage.setScene(new Scene(layout, 1366, 768));
         stage.show();
     }
 

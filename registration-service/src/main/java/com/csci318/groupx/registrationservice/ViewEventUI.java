@@ -190,7 +190,7 @@ public class ViewEventUI extends Application {
 
         root.setCenter(scrollPane);
 
-        Scene scene = new Scene(root, 940, 780);
+        Scene scene = new Scene(root, 1366, 768);
         primaryStage.setTitle("Event details workspace view");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);

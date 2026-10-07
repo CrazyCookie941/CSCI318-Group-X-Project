@@ -138,11 +138,7 @@ public class DashboardUI extends Application
         carouselContainer.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(carouselContainer, Priority.ALWAYS); // Expand entire bar block horizontally
 
-        Button previousButton = new Button("‹");
-        Button nextButton = new Button("›");
         String arrowStyle = "-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 20; -fx-background-radius: 20; -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #555555; -fx-pref-width: 36; -fx-pref-height: 36; -fx-min-width: 36; -fx-cursor: hand;";
-        previousButton.setStyle(arrowStyle);
-        nextButton.setStyle(arrowStyle);
 
         // Construct flexible container frames instead of standard fixed ImageViews
         java.util.List<EventListing> events = EventCatalog.getEvents();
@@ -151,7 +147,7 @@ public class DashboardUI extends Application
         StackPane card3 = createEventCard(events.get(2), stage);
         StackPane card4 = createEventCard(events.get(3), stage);
 
-        carouselContainer.getChildren().addAll(previousButton, card1, card2, card3, card4, nextButton);
+        carouselContainer.getChildren().addAll(card1, card2, card3, card4);
         ScrollPane eventScroller = new ScrollPane(carouselContainer);
         eventScroller.setFitToHeight(true);
         eventScroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
@@ -177,7 +173,7 @@ public class DashboardUI extends Application
         // 5. Stage Setup and Launch Sizing
         stage.setTitle("Event Discovery Dashboard");
 
-        Scene scene = new Scene(rootLayout, 1024, 576);
+        Scene scene = new Scene(rootLayout, 1366, 768);
         stage.setScene(scene);
         stage.setMinWidth(750);
         stage.setMinHeight(480);

@@ -106,7 +106,7 @@ public class LoginUI extends Application
 
         // 3. Stage Initialization Setup
         stage.setTitle("Sign In");
-        stage.setScene(new Scene(rootLayout, 1024, 576)); // Height expanded slightly to fit the card layout vertically
+        stage.setScene(new Scene(rootLayout, 1366, 768)); // Height expanded slightly to fit the card layout vertically
         stage.setResizable(false);
         stage.show();
     }

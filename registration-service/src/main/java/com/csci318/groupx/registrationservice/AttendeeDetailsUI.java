@@ -130,7 +130,7 @@ public class AttendeeDetailsUI extends Application
 
         // 5. Stage Initialization Setup
         stage.setTitle("Event Admission Details Form");
-        stage.setScene(new Scene(layout, 1020, 560));
+        stage.setScene(new Scene(layout, 1366, 768));
         stage.setResizable(false);
         stage.show();
     }

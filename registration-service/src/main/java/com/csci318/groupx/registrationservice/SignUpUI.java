@@ -109,7 +109,7 @@ public class SignUpUI extends Application
 
         // 3. Stage Presentation Sizing
         stage.setTitle("Create Account");
-        stage.setScene(new Scene(rootLayout, 1024, 576)); // Dimensions tracking clean window layout metrics
+        stage.setScene(new Scene(rootLayout, 1366, 768)); // Dimensions tracking clean window layout metrics
         stage.setResizable(false);
         stage.show();
     }
