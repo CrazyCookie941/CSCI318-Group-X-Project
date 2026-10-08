@@ -40,7 +40,11 @@ final class Navigation
         homeLink.setOnAction(event -> goTo(stage, nextStage -> new DashboardUI().start(nextStage)));
 
         Hyperlink eventsLink = createNavigationLink("My events");
-        eventsLink.setOnAction(event -> goTo(stage, nextStage -> new MyListingsEventGoer().start(nextStage)));
+        eventsLink.setOnAction(event ->
+        {
+            if (Session.isManager()) { goTo(stage, nextStage -> new MyListingsEventManager().start(nextStage)); }
+            else { goTo(stage, nextStage -> new MyListingsEventGoer().start(nextStage)); }
+        });
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);

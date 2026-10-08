@@ -45,9 +45,20 @@ public class AccountUI extends Application
         profileGrid.getColumnConstraints().addAll(labelColumn, fieldColumn);
 
         // Add core informational fields
-        addField(profileGrid, 0, "Username:", new TextField(), "Enter your username");
-        addField(profileGrid, 1, "Location:", new TextField(), "e.g. Sydney, Australia");
-        addField(profileGrid, 2, "Email:", new TextField(), "your.email@example.com");
+        TextField txtUsername = new TextField();
+        TextField txtLocation = new TextField();
+        TextField txtEmail = new TextField();
+        addField(profileGrid, 0, "Username:", txtUsername, "Enter your username");
+        addField(profileGrid, 1, "Location:", txtLocation, "e.g. Sydney, Australia");
+        addField(profileGrid, 2, "Email:", txtEmail, "your.email@example.com");
+
+        User currentUser = Session.current();
+        if (currentUser != null)
+        {
+            txtUsername.setText(currentUser.DisplayName());
+            txtEmail.setText(currentUser.email());
+            txtLocation.setText(UserType.findLocation(currentUser.id()));
+        }
 
         // Integrated Password Field with Change Option
         Label lblPassword = new Label("Password:");
@@ -99,9 +110,47 @@ public class AccountUI extends Application
 
         Button btnCancel = new Button("Cancel");
         btnCancel.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 10 24 10 24; -fx-cursor: hand;");
+        Label statusMessage = new Label();
+        statusMessage.setWrapText(true);
+        statusMessage.setStyle("-fx-font-size: 13px; -fx-font-weight: bold;");
+
+        btnSave.setOnAction(event ->
+        {
+            User user = Session.current();
+            if (user == null)
+            {
+                statusMessage.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #d00000;");
+                statusMessage.setText("You need to be logged in.");
+                return;
+            }
+
+            String name = txtUsername.getText().trim();
+            String email = txtEmail.getText().trim();
+            String location = txtLocation.getText().trim();
+
+            if (name.isBlank() || email.isBlank())
+            {
+                statusMessage.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #d00000;");
+                statusMessage.setText("Username and email can't be empty.");
+                return;
+            }
+            if (UserType.emailTakenByOther(email, user.id()))
+            {
+                statusMessage.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #d00000;");
+                statusMessage.setText("That email is already used by another account.");
+                return;
+            }
+
+            User updated = UserType.updateProfile(user, name, email, location);
+            Session.login(updated);
+            statusMessage.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #2e7d32;");
+            statusMessage.setText("Changes saved.");
+        });
+
+        btnCancel.setOnAction(event -> Navigation.goTo(stage, nextStage -> new DashboardUI().start(nextStage)));
 
         actionButtons.getChildren().addAll(btnSave, btnCancel);
-        leftColumn.getChildren().addAll(title, profileGrid, actionButtons);
+        leftColumn.getChildren().addAll(title, profileGrid, actionButtons, statusMessage);
 
         // --- RIGHT COLUMN: Profile Picture Slot Area ---
         VBox rightColumn = new VBox(12);

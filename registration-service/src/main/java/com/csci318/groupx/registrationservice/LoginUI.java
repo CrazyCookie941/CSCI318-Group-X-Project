@@ -14,6 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import java.util.Optional;
 
 // Displays the sign-in form and validates the required fields with a clean, unified aesthetic
 public class LoginUI extends Application
@@ -73,11 +74,20 @@ public class LoginUI extends Application
 
         // Validation trigger matching the internal structure
         loginButton.setOnAction(event -> {
-            if (emailField.getText().isBlank() || passwordField.getText().isBlank()) {
+            if (emailField.getText().isBlank() || passwordField.getText().isBlank())
+            {
                 message.setText("Please enter both email and password.");
-            } else {
+                return;
+            }
+
+            Optional<User> user = UserType.authenticate(emailField.getText().trim(), passwordField.getText());
+
+            if (user.isPresent())
+            {
+                Session.login(user.get());
                 Navigation.goTo(stage, nextStage -> new DashboardUI().start(nextStage));
             }
+            else { message.setText("Incorrect email or password."); }
         });
 
         // Navigation Hyperlink Options

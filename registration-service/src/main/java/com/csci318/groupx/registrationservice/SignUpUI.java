@@ -14,6 +14,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.scene.control.ComboBox;
+import java.util.Optional;
 
 // Displays the account registration form with a clean, unified aesthetic matching other workspace views
 public class SignUpUI extends Application
@@ -30,7 +32,7 @@ public class SignUpUI extends Application
         // 2. Centralized Registration Form Card Panel
         VBox cardContainer = new VBox(22);
         cardContainer.setAlignment(Pos.TOP_LEFT);
-        cardContainer.setMaxSize(380, 480); // Keeps the signup capsule perfectly proportioned
+        cardContainer.setMaxSize(380, 620); // Keeps the signup capsule perfectly proportioned
         cardContainer.setPadding(new Insets(35, 40, 35, 40));
         // Clean white card structure featuring a subtle drop-shadow effect
         cardContainer.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 8, 0, 0, 4);");
@@ -48,6 +50,12 @@ public class SignUpUI extends Application
         headersBlock.getChildren().addAll(welcome, title);
 
         // Input Fields (Unified look with generous click/touch targets)
+        TextField nameField = new TextField();
+        nameField.setPromptText("Full name");
+        nameField.setPrefHeight(38);
+        nameField.setMaxWidth(Double.MAX_VALUE);
+        nameField.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 12; -fx-font-size: 14px;");
+
         TextField emailField = new TextField();
         emailField.setPromptText("Email address");
         emailField.setPrefHeight(38);
@@ -60,6 +68,11 @@ public class SignUpUI extends Application
         passwordField.setMaxWidth(Double.MAX_VALUE);
         passwordField.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 12; -fx-font-size: 14px;");
 
+        ComboBox<String> accountTypeBox = new ComboBox<>();
+        accountTypeBox.getItems().addAll("Event goer", "Event manager");
+        accountTypeBox.setValue("Event goer");
+        accountTypeBox.setPrefHeight(38);
+        accountTypeBox.setMaxWidth(Double.MAX_VALUE);
         // Premium Primary Blue Action Button
         Button signUpButton = new Button("Sign Up");
         signUpButton.setPrefHeight(40);
@@ -77,10 +90,27 @@ public class SignUpUI extends Application
 
         // Form registration submission checking rules
         signUpButton.setOnAction(event -> {
-            if (emailField.getText().isBlank() || passwordField.getText().isBlank()) {
-                message.setText("Please enter both email and password.");
-            } else {
+            String name = nameField.getText().trim();
+            String email = emailField.getText().trim();
+            String password = passwordField.getText();
+
+            if (name.isBlank() || email.isBlank() || password.isBlank()) {
+                message.setText("Please fill in all fields.");
+                return;
+            }
+            if (UserType.emailExists(email)) {
+                message.setText("An account with that email already exists.");
+                return;
+            }
+
+            Role role = "Event manager".equals(accountTypeBox.getValue()) ? Role.MANAGER : Role.GOER;
+            Optional<User> user = UserType.create(email, password, name, role);
+
+            if (user.isPresent()) {
+                Session.login(user.get());
                 Navigation.goTo(stage, nextStage -> new DashboardUI().start(nextStage));
+            } else {
+                message.setText("Could not create account. Please try again.");
             }
         });
 
@@ -98,8 +128,10 @@ public class SignUpUI extends Application
         // Assembly of card and core inputs
         cardContainer.getChildren().addAll(
                 headersBlock,
+                nameField,
                 emailField,
                 passwordField,
+                accountTypeBox,
                 signUpButton,
                 accountRow,
                 message

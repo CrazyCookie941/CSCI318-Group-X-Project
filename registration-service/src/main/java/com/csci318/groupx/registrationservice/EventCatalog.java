@@ -2,44 +2,47 @@ package com.csci318.groupx.registrationservice;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.sql.*;
+
 
 final class EventCatalog {
-    private static final List<EventListing> EVENTS = new ArrayList<>(List.of(
-            new EventListing(
-                    "Radiohead concert",
-                    "Concert",
-                    "Afterpay Arena",
-                    "$50",
-                    "Large",
-                    "Radiohead's latest tour to Australia starts in Sydney.",
-                    "/Images/394f75e3cb710d620129ea9fef2754f83b5bc54b8e8f4ffcfc2badd46c297059.jpeg"),
-            new EventListing(
-                    "Nightclub",
-                    "Nightclub",
-                    "Wollongong Central",
-                    "$35",
-                    "Large",
-                    "An 18+ nightclub with loud DJ music and alcohol.",
-                    "/Images/Wikipedia_space_ibiza(03).jpg"),
-            new EventListing(
-                    "Community barbecue",
-                    "Community",
-                    "Sydney Central Park",
-                    "$15",
-                    "Medium",
-                    "Fun lunch for family and friends. All food and refreshments are included with your ticket price entry.",
-                    "/Images/park-art-P1020661.jpg"),
-            new EventListing(
-                    "Bingo night",
-                    "Games",
-                    "Wollongong Community Hall",
-                    "Free",
-                    "Small",
-                    "A classic bingo night for everyone to enjoy.",
-                    "/Images/Bingo_night.jpg")
-    ));
+    private static final String DB_URL = "jdbc:sqlite:../Data/events.db";
+
+    private static final List<EventListing> EVENTS = new ArrayList<>(loadEvents());
 
     private EventCatalog() {
+    }
+
+    private static List<EventListing> loadEvents()
+    {
+        List<EventListing> list = new ArrayList<>();
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("SELECT * FROM events ORDER BY id")) {
+            while (rs.next())
+            {
+                list.add(new EventListing(
+                        rs.getString("title"),
+                        rs.getString("type"),
+                        rs.getString("location"),
+                        formatPrice(rs.getDouble("price")),
+                        rs.getString("size"),
+                        rs.getString("description"),
+                        rs.getString("image_location")));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not load events from database", e);
+        }
+        return list;
+    }
+
+    private static String formatPrice(double price) {
+        if (price == 0) {
+            return "Free";
+        }
+        return price % 1 == 0
+                ? String.format("$%d", (long) price)
+                : String.format("$%.2f", price);
     }
 
     static List<EventListing> getEvents() {
