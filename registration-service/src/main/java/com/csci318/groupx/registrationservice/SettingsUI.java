@@ -50,7 +50,6 @@ public class SettingsUI extends Application
                 createSettingsSection("Account details", "Update your name, email address, and account preferences."),
                 createSettingsSection("Financial information", "Manage payment methods, transactions, and billing information."),
                 createSettingsSection("Notifications", "Choose which event reminders and account updates you receive dynamically."),
-                createSettingsSection("Security", "Change your password, review active sessions, and update security parameters."),
                 createSettingsSection("Other", "View system version logs, documentation resources, and corporate terms.", createOtherSettingsContent())
         );
 

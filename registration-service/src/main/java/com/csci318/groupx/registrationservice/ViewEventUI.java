@@ -102,17 +102,17 @@ public class ViewEventUI extends Application {
         btnRegister.setStyle("-fx-background-color: #2e7d32; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20 10 20; -fx-background-radius: 4; -fx-cursor: hand;");
         btnRegister.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new AttendeeDetailsUI().start(nextStage)));
 
-        Button btnBack = new Button("Back to Listings");
-        btnBack.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 10 20 10 20; -fx-cursor: hand;");
-        btnBack.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new MyListingsEventGoer().start(nextStage)));
+        //Button btnBack = new Button("Back to Listings");
+        //btnBack.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 10 20 10 20; -fx-cursor: hand;");
+        //btnBack.setOnAction(event -> Navigation.goTo(primaryStage, nextStage -> new MyListingsEventGoer().start(nextStage)));
 
-        actionButtons.getChildren().addAll(btnRegister, btnBack);
+        actionButtons.getChildren().addAll(btnRegister);
         leftColumn.getChildren().addAll(headerTitle, infoGrid, descriptionBox, actionButtons);
 
         VBox rightColumn = new VBox(12);
         rightColumn.setAlignment(Pos.TOP_LEFT);
 
-        Label lblImages = new Label("Images:");
+        Label lblImages = new Label("Gallery");
         lblImages.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #666666;");
 
         StackPane imageFrame = new StackPane();
@@ -139,7 +139,7 @@ public class ViewEventUI extends Application {
         }
 
         VBox mapSection = new VBox(8);
-        Label lblMap = new Label("Map:");
+        Label lblMap = new Label("Map Location");
         lblMap.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #666666;");
 
         Pane mapPanel = new Pane();
