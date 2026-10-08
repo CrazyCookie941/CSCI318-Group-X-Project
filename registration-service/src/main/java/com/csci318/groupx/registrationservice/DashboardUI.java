@@ -157,17 +157,15 @@ public class DashboardUI extends Application
         Label filtersTitle = new Label("Filters");
         filtersTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #222222; -fx-padding: 0 0 5 0;");
 
-        ComboBox<String> locationBox = createStyledComboBox("Any location", "Wollongong", "Melbourne", "Sydney", "Brisbane");
-        ComboBox<String> typeBox = createStyledComboBox("Any type", "Conference", "Workshop", "Concert", "Nightclub", "Exhibition", "Community", "Games");
+        ComboBox<String> locationBox = createStyledComboBox("Any location", "Perth", "Melbourne", "Sydney", "Brisbane", "Adelaide", "Darwin", "Hobart");
+        ComboBox<String> typeBox = createStyledComboBox("Any type", "Conference", "Workshop", "Concert", "Nightclub", "Exhibition", "Community", "Games", "Festival", "Other");
         ComboBox<String> priceBox = createStyledComboBox("Any price", "Free", "Under $50", "Over $50");
-        ComboBox<String> sizeBox = createStyledComboBox("Any size", "Small", "Medium", "Large");
 
         filtersPane.getChildren().addAll(
                 filtersTitle,
                 createFilterLabel("Location"), locationBox,
                 createFilterLabel("Type"), typeBox,
-                createFilterLabel("Price"), priceBox,
-                createFilterLabel("Size"), sizeBox
+                createFilterLabel("Price"), priceBox
         );
         rootLayout.setLeft(filtersPane);
 
@@ -223,29 +221,70 @@ public class DashboardUI extends Application
         eventScroller.setPrefViewportHeight(150);
         eventScroller.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
         carouselSection.getChildren().addAll(lblFeatured, eventScroller);
-
-        // Build the Search Results container layout panel out-of-view initially
-        VBox searchResultsSection = createSearchResultsSection(events, stage);
-
         // Add only the default visible items to the layout container view on launch
         centerContentStack.getChildren().addAll(searchBarRow, carouselSection);
 
-        // REAL-TIME LISTENER: Instantly swaps between Carousel and Search Results lists
-        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue == null || newValue.trim().isEmpty()) {
-                // If search field is empty, show the Recommendations Carousel section
+        // Extract the UI container holding the rows from the wrapper so we can mutate its children
+        VBox searchResultsSection = createSearchResultsSection(events, stage);
+        // Find the container inside the searchResultsSection (the 2nd element added to it)
+        VBox resultsListContainer = (VBox) searchResultsSection.getChildren().get(1);
+
+        // Helper method to refresh calculations and redraw components
+        Runnable updateSearchResults = () -> {
+            String searchText = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();
+            String selectedLoc = locationBox.getValue();
+            String selectedType = typeBox.getValue();
+            // Feel free to pull in priceBox and sizeBox values here if your EventListing model supports them
+
+            // 1. Filter the live master catalog
+            java.util.List<EventListing> filteredEvents = EventCatalog.getEvents().stream()
+                    .filter(event -> {
+                        // Match Text Query (Title)
+                        boolean matchesText = searchText.isEmpty() ||
+                                event.title().toLowerCase().contains(searchText);
+
+                        // Match Location Filter
+                        boolean matchesLocation = "Any location".equals(selectedLoc) ||
+                                event.location().equalsIgnoreCase(selectedLoc); // Assumes event.location() exists
+
+                        // Match Type Filter
+                        boolean matchesType = "Any type".equals(selectedType) ||
+                                event.type().equalsIgnoreCase(selectedType);
+
+                        return matchesText && matchesLocation && matchesType;
+                    })
+                    .toList();
+
+            // 2. Clear old row view layouts out of DOM tree memory
+            resultsListContainer.getChildren().clear();
+
+            // 3. Rebuild updated elements mapping onto matching queries
+            for (EventListing filteredEvent : filteredEvents) {
+                resultsListContainer.getChildren().add(createSearchResultRow(filteredEvent, stage));
+            }
+
+            // 4. View State Toggle: Decides whether to display recommendation panels or results
+            if (searchText.isEmpty() && "Any location".equals(selectedLoc) && "Any type".equals(selectedType)) {
                 centerContentStack.getChildren().remove(searchResultsSection);
                 if (!centerContentStack.getChildren().contains(carouselSection)) {
                     centerContentStack.getChildren().add(carouselSection);
                 }
             } else {
-                // If user is typing, replace it with the Search Results rows section
                 centerContentStack.getChildren().remove(carouselSection);
                 if (!centerContentStack.getChildren().contains(searchResultsSection)) {
                     centerContentStack.getChildren().add(searchResultsSection);
                 }
             }
-        });
+        };
+
+        // Attach the real-time listener updates to search inputs and filter changes
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> updateSearchResults.run());
+        locationBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSearchResults.run());
+        typeBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSearchResults.run());
+        priceBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSearchResults.run());
+
+        // Connect the "Search" button click event to also execute a query refresh action
+        btnSearch.setOnAction(e -> updateSearchResults.run());
 
         // ScrollPane Setup Layer
         ScrollPane scrollWrapper = new ScrollPane(centerContentStack);
