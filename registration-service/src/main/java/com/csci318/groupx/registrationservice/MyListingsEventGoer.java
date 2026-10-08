@@ -45,12 +45,9 @@ public class MyListingsEventGoer extends Application
         listingsContainer.setMaxWidth(Double.MAX_VALUE);
         VBox.setVgrow(listingsContainer, Priority.ALWAYS);
 
-        listingsContainer.getChildren().addAll(
-                createListing(stage, EventCatalog.getEvents().get(2)),
-                createListing(stage, EventCatalog.getEvents().get(0)),
-                createListing(stage, EventCatalog.getEvents().get(1)),
-                createListing(stage, EventCatalog.getEvents().get(3))
-        );
+        for (EventListing listing : EventCatalog.getEvents()) {
+            listingsContainer.getChildren().add(createListing(stage, listing));
+        }
 
         content.getChildren().addAll(title, listingsContainer);
 

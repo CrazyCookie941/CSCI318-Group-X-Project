@@ -113,5 +113,5 @@ public class LandingPage extends javafx.application.Application
         return card;
     }
 
-    public static void main(String[] args) { launch(args); }
+    public static void main(String[] args) { launch(args);  }
 }

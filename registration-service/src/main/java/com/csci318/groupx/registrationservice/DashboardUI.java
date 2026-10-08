@@ -234,12 +234,7 @@ public class DashboardUI extends Application
 
         // Construct flexible container frames instead of standard fixed ImageViews
         java.util.List<EventListing> events = EventCatalog.getEvents();
-        StackPane card1 = createEventCard(events.get(0), stage);
-        StackPane card2 = createEventCard(events.get(1), stage);
-        StackPane card3 = createEventCard(events.get(2), stage);
-        StackPane card4 = createEventCard(events.get(3), stage);
-
-        carouselContainer.getChildren().addAll(card1, card2, card3, card4);
+        for (EventListing listing : events) { carouselContainer.getChildren().add(createEventCard(listing, stage)); }
         ScrollPane eventScroller = new ScrollPane(carouselContainer);
         eventScroller.setFitToHeight(true);
         eventScroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);

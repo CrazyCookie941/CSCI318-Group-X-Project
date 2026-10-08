@@ -144,6 +144,13 @@ public class CreateEventUI extends Application
             }
 
             try {
+                EventCatalog.parsePrice(txtPrice.getText());
+            } catch (NumberFormatException exception) {
+                new Alert(Alert.AlertType.WARNING, "Price must be a number (for example 25 or 25.50), or 'Free'.").showAndWait();
+                return;
+            }
+
+            try {
                 String imageLocation = copyUploadedImage(selectedImage[0]);
                 EventListing listing = new EventListing(
                         txtTitle.getText().trim(),
@@ -157,6 +164,8 @@ public class CreateEventUI extends Application
                 Navigation.goTo(primaryStage, nextStage -> new ViewEventUI(listing).start(nextStage));
             } catch (IOException exception) {
                 new Alert(Alert.AlertType.ERROR, "The photo could not be uploaded: " + exception.getMessage()).showAndWait();
+            } catch (RuntimeException exception) {
+                new Alert(Alert.AlertType.ERROR, "The event could not be saved: " + exception.getMessage()).showAndWait();
             }
         });
 

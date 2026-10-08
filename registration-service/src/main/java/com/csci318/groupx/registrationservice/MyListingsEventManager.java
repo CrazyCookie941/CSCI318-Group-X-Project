@@ -20,6 +20,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.scene.control.ButtonType;
 
 // Displays and manages the events uploaded by the current corporate event organiser
 public class MyListingsEventManager extends Application
@@ -54,14 +55,25 @@ public class MyListingsEventManager extends Application
         VBox.setVgrow(listingsContainer, Priority.ALWAYS);
 
         // Load items cleanly without formatting breaks
-        listingsContainer.getChildren().addAll(
-                createListing("Community barbecue", "/Images/istockphoto-964136996-612x612.jpg"),
-                createListing("Radiohead concert", "/Images/394f75e3cb710d620129ea9fef2754f83b5bc54b8e8f4ffcfc2badd46c297059.jpeg"),
-                createListing("Nightclub dance event", "/Images/Wikipedia_space_ibiza(03).jpg"),
-                createListing("Bingo night social", "/Images/Bingo_night.jpg")
-        );
+        User manager = Session.current();
+        if (manager != null) {
+            for (EventListing listing : EventCatalog.getEvents()) {
+                if (listing.ownerId() != null && listing.ownerId() == manager.id()) {
+                    listingsContainer.getChildren().add(createListing(stage, listing));
+                }
+            }
+        }
+        if (listingsContainer.getChildren().isEmpty()) {
+            Label noEvents = new Label("You haven't created any events yet.");
+            noEvents.setStyle("-fx-font-size: 14px; -fx-text-fill: #666666;");
+            listingsContainer.getChildren().add(noEvents);
+        }
 
-        content.getChildren().addAll(title, listingsTitle, listingsContainer);
+        Button createEventButton = new Button("Create event");
+        createEventButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-padding: 8 18 8 18; -fx-cursor: hand;");
+        createEventButton.setOnAction(event -> Navigation.goTo(stage, nextStage -> new CreateEventUI().start(nextStage)));
+
+        content.getChildren().addAll(title, createEventButton, listingsTitle, listingsContainer);
 
         // 4. Scroll Wrapper Integration (Safeguards against window clipping)
         ScrollPane scrollWrapper = new ScrollPane(content);
@@ -82,8 +94,9 @@ public class MyListingsEventManager extends Application
 
     // Creates a consistently styled hyperlink navigation item matching prior designs
     // Creates one clean modern listing card row configured with left-snapped typography
-    private HBox createListing(String listingName, String imagePath)
+    private HBox createListing(Stage stage, EventListing listing)
     {
+        String listingName = listing.title();
         HBox listingRow = new HBox(15);
         listingRow.setAlignment(Pos.CENTER_LEFT);
         listingRow.setPadding(new Insets(12, 20, 12, 16));
@@ -120,7 +133,7 @@ public class MyListingsEventManager extends Application
         viewButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;");
         viewButton.setOnMouseEntered(e -> viewButton.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
         viewButton.setOnMouseExited(e -> viewButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
-        viewButton.setOnAction(event -> showMessage("Viewing Details", "Opening full platform details for: " + listingName));
+        viewButton.setOnAction(event -> Navigation.goTo(stage, nextStage -> new ViewEventUI(listing).start(nextStage)));
 
         // View Invoice Button
         Button invoiceButton = new Button("Edit Listing");
@@ -143,9 +156,26 @@ public class MyListingsEventManager extends Application
         removeButton.setOnMouseEntered(e -> removeButton.setStyle(hoverRemoveStyle));
         removeButton.setOnMouseExited(e -> removeButton.setStyle(normalRemoveStyle));
         removeButton.setOnAction(event -> {
-            VBox parentContainer = (VBox) listingRow.getParent();
-            parentContainer.getChildren().remove(listingRow);
-            showMessage("Booking Cancelled", "You have successfully cancelled your booking for: " + listingName);
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                    "Delete \"" + listingName + "\"? This can't be undone.",
+                    ButtonType.OK, ButtonType.CANCEL);
+            confirm.setTitle("Cancel event");
+            confirm.setHeaderText(null);
+            if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+                return;
+            }
+
+            try {
+                if (EventCatalog.delete(listing)) {
+                    VBox parentContainer = (VBox) listingRow.getParent();
+                    parentContainer.getChildren().remove(listingRow);
+                    showMessage("Event deleted", "\"" + listingName + "\" has been deleted.");
+                } else {
+                    showMessage("Not allowed", "Only the manager who created this event can delete it.");
+                }
+            } catch (RuntimeException exception) {
+                showMessage("Error", "The event could not be deleted: " + exception.getMessage());
+            }
         });
 
         MenuItem telemetryItem = new MenuItem("View telemetry");

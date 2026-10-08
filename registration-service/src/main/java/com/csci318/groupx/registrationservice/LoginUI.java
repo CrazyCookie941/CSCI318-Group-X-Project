@@ -87,7 +87,7 @@ public class LoginUI extends Application
                 Session.login(user.get());
                 Navigation.goTo(stage, nextStage -> new DashboardUI().start(nextStage));
             }
-            else { message.setText("Incorrect email or password."); }
+            else { message.setText("Incorrect details, please try again."); }
         });
 
         // Navigation Hyperlink Options
