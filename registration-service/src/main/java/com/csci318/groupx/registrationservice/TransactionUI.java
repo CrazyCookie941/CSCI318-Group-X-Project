@@ -97,8 +97,9 @@ public class TransactionUI extends Application
         btnPay.setOnMouseEntered(e -> btnPay.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 26 11 26; -fx-background-radius: 4; -fx-font-size: 14px; -fx-cursor: hand;"));
         btnPay.setOnMouseExited(e -> btnPay.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 26 11 26; -fx-background-radius: 4; -fx-font-size: 14px; -fx-cursor: hand;"));
 
-        Button btnCancel = new Button("Cancel");
+        Button btnCancel = new Button("Back");
         btnCancel.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 11 24 11 24; -fx-font-size: 14px; -fx-cursor: hand;");
+        btnCancel.setOnAction(eventAction -> Navigation.goTo(stage, nextStage -> new DashboardUI().start(nextStage)));
 
         actionButtons.getChildren().addAll(btnPay, btnCancel);
         leftColumn.getChildren().addAll(title, checkoutGrid, actionButtons);

@@ -32,8 +32,8 @@ public class SignUpUI extends Application
         // 2. Centralized Registration Form Card Panel
         VBox cardContainer = new VBox(22);
         cardContainer.setAlignment(Pos.TOP_LEFT);
-        cardContainer.setMaxSize(380, 620); // Keeps the signup capsule perfectly proportioned
-        cardContainer.setPadding(new Insets(35, 40, 35, 40));
+        cardContainer.setMaxSize(380, 520); // Keeps the signup capsule perfectly proportioned
+        cardContainer.setPadding(new Insets(35, 40, 0, 40));
         // Clean white card structure featuring a subtle drop-shadow effect
         cardContainer.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 8, 0, 0, 4);");
 

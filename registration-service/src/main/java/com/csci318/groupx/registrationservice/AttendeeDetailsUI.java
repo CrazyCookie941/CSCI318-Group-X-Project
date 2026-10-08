@@ -8,6 +8,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
+import java.util.function.Consumer;
+
 // Displays the ticket details data entry screen matching the ecosystem's design tokens
 public class AttendeeDetailsUI extends Application
 {
@@ -65,7 +67,7 @@ public class AttendeeDetailsUI extends Application
         formGrid.add(cbTicket, 1, 3);
 
         // Multi-line Special Request entry block
-        Label lblRequirements = new Label("Dietary / Access:");
+        Label lblRequirements = new Label("Other Notes:");
         lblRequirements.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #666666;");
 
         TextArea txtRequirements = new TextArea();
@@ -89,6 +91,7 @@ public class AttendeeDetailsUI extends Application
 
         Button btnBack = new Button("Back");
         btnBack.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 11 24 11 24; -fx-font-size: 14px; -fx-cursor: hand;");
+        // btnBack.setOnAction(event -> Navigation.goTo(stage, previousScreen)); -- needs fixing
 
         actionButtons.getChildren().addAll(btnProceed, btnBack);
         leftColumn.getChildren().addAll(title, formGrid, actionButtons);

@@ -91,14 +91,14 @@ public class LoginUI extends Application
         });
 
         // Navigation Hyperlink Options
-        Hyperlink forgotPassword = new Hyperlink("Forgot password?");
-        forgotPassword.setStyle("-fx-text-fill: #007bc4; -fx-font-size: 13px; -fx-underline: false; -fx-padding: 0;");
+        //Hyperlink forgotPassword = new Hyperlink("Forgot password?");
+        //forgotPassword.setStyle("-fx-text-fill: #007bc4; -fx-font-size: 13px; -fx-underline: false; -fx-padding: 0;");
 
         Hyperlink createAccount = new Hyperlink("Create an account");
         createAccount.setStyle("-fx-text-fill: #007bc4; -fx-font-size: 13px; -fx-underline: false; -fx-padding: 0;");
         createAccount.setOnAction(event -> Navigation.goTo(stage, nextStage -> new SignUpUI().start(nextStage)));
 
-        HBox links = new HBox(15, forgotPassword, createAccount);
+        HBox links = new HBox(15, createAccount);
         links.setAlignment(Pos.CENTER_LEFT);
 
         // Assembly of card and core elements
