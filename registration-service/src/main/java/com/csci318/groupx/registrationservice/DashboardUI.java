@@ -207,7 +207,7 @@ public class DashboardUI extends Application
         searchBarRow.setMaxWidth(Double.MAX_VALUE);
 
         TextField searchField = new TextField();
-        searchField.setPromptText("Search for amazing local events...");
+        searchField.setPromptText("Search for events...");
         searchField.setPrefHeight(38);
         searchField.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4 0 0 4; -fx-background-radius: 4 0 0 4; -fx-padding: 4 12; -fx-font-size: 14px;");
         HBox.setHgrow(searchField, Priority.ALWAYS);
@@ -224,7 +224,7 @@ public class DashboardUI extends Application
         carouselSection.setMaxWidth(Double.MAX_VALUE);
         VBox.setVgrow(carouselSection, Priority.ALWAYS);
 
-        Label lblFeatured = new Label("Featured Events Near You");
+        Label lblFeatured = new Label("Featured Events");
         lblFeatured.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #222222;");
 
         HBox carouselContainer = new HBox(15);

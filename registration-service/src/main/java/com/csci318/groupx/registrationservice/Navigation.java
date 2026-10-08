@@ -39,7 +39,7 @@ final class Navigation
         Hyperlink homeLink = createNavigationLink("Home");
         homeLink.setOnAction(event -> goTo(stage, nextStage -> new DashboardUI().start(nextStage)));
 
-        Hyperlink eventsLink = createNavigationLink("My events");
+        Hyperlink eventsLink = createNavigationLink("My Events");
         eventsLink.setOnAction(event ->
         {
             if (Session.isManager()) { goTo(stage, nextStage -> new MyListingsEventManager().start(nextStage)); }
@@ -49,13 +49,34 @@ final class Navigation
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
+        Button addEventButton = createHeaderButton(createPlusIcon(), "Add Event");
         Button notificationButton = createHeaderButton(createNotificationIcon(), "Notifications");
         Button profileButton = createHeaderButton(createProfileIcon(), "Profile");
         notificationButton.setOnAction(event -> showNotificationsPopup(notificationButton));
         profileButton.setOnAction(event -> showProfilePopup(profileButton, stage));
 
-        navigationBar.getChildren().addAll(homeLink, eventsLink, spacer, notificationButton, profileButton);
+        navigationBar.getChildren().addAll(homeLink, eventsLink, spacer, addEventButton, notificationButton, profileButton);
         return navigationBar;
+    }
+
+    private static StackPane createPlusIcon()
+    {
+        // Vector path for a clean, sharp plus math symbol matching a 24x24 layout grid
+        SVGPath plusPath = new SVGPath();
+        plusPath.setContent("M 19 13 h -6 v 6 h -2 v -6 H 5 v -2 h 6 V 5 h 2 v 6 h 6 z");
+
+        // Change the fill to match your navigation bar background color (#1a1a1a)
+        // to create the solid visual cutout effect shown in your image
+        plusPath.setFill(Color.web("#1a1a1a"));
+
+        // Outer layout circle frame - now filled with solid white
+        Circle backgroundCircle = new Circle(12, Color.WHITE);
+
+        StackPane icon = new StackPane(backgroundCircle, plusPath);
+        icon.setMinSize(24, 24);
+        icon.setPrefSize(24, 24);
+        icon.setMaxSize(24, 24);
+        return icon;
     }
 
     private static Button createHeaderButton(Node graphic, String accessibleText)
@@ -70,14 +91,13 @@ final class Navigation
 
     private static StackPane createProfileIcon()
     {
-        Circle head = new Circle(4, Color.WHITE);
-        head.setTranslateY(-5);
+        SVGPath profilePath = new SVGPath();
+        // A balanced, modern profile path (24x24 scale) with a round head and contoured shoulders
+        profilePath.setContent("M 12 12 C 14.21 12, 16 10.21, 16 8 C 16 5.79, 14.21 4, 12 4 C 9.79 4, 8 5.79, 8 8 C 8 10.21, 9.79 12, 12 12 Z M 12 14 C 9.33 14, 4 15.34, 4 18 V 20 H 20 V 18 C 20 15.34, 14.67 14, 12 14 Z");
+        profilePath.setFill(Color.WHITE);
 
-        SVGPath shoulders = new SVGPath();
-        shoulders.setContent("M 3 22 C 3 15, 21 15, 21 22 Z");
-        shoulders.setFill(Color.WHITE);
-
-        StackPane icon = new StackPane(shoulders, head);
+        // Center it cleanly within the 24x24 container
+        StackPane icon = new StackPane(profilePath);
         icon.setMinSize(24, 24);
         icon.setPrefSize(24, 24);
         icon.setMaxSize(24, 24);

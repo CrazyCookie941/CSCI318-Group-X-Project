@@ -96,12 +96,11 @@ public class AccountUI extends Application
         lblDeleteAccount.setStyle("-fx-font-size: 14px; -fx-text-fill: #666666; -fx-font-weight: bold;");
 
         Button btnDeleteAccount = new Button("Delete my account");
-        btnDeleteAccount.setStyle("-fx-background-color: #fff1f1; -fx-text-fill: #b00020; -fx-border-color: #d98d8d; -fx-border-radius: 4; -fx-padding: 8 14 8 14; -fx-font-weight: bold; -fx-cursor: hand;");
+        btnDeleteAccount.setStyle("-fx-background-color: #fff1f1; -fx-text-fill: #b00020; -fx-border-color: #d98d8d; -fx-border-radius: 4; -fx-padding: 10 24 10 24; -fx-font-weight: bold; -fx-cursor: hand;");
         btnDeleteAccount.setOnAction(event ->
                 new Alert(Alert.AlertType.CONFIRMATION, "This action is permanent. Please confirm you want to delete your account.").showAndWait());
 
-        profileGrid.add(lblDeleteAccount, 0, 5);
-        profileGrid.add(btnDeleteAccount, 1, 5);
+
 
         // Footer Action Trigger Elements
         HBox actionButtons = new HBox(15);
@@ -149,7 +148,7 @@ public class AccountUI extends Application
 
         btnCancel.setOnAction(event -> Navigation.goTo(stage, nextStage -> new DashboardUI().start(nextStage)));
 
-        actionButtons.getChildren().addAll(btnSave, btnCancel);
+        actionButtons.getChildren().addAll(btnSave, btnCancel, btnDeleteAccount);
         leftColumn.getChildren().addAll(title, profileGrid, actionButtons, statusMessage);
 
         // --- RIGHT COLUMN: Profile Picture Slot Area ---
