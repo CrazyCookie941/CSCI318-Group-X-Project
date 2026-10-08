@@ -160,8 +160,8 @@ public class CreateEventUI extends Application
                         txtSize.getText().isBlank() ? "Not specified" : txtSize.getText().trim(),
                         txtOtherInfo.getText().isBlank() ? "No additional information provided." : txtOtherInfo.getText().trim(),
                         imageLocation);
-                EventCatalog.add(listing);
-                Navigation.goTo(primaryStage, nextStage -> new ViewEventUI(listing).start(nextStage));
+                EventListing saved = EventCatalog.add(listing);
+                Navigation.goTo(primaryStage, nextStage -> new ViewEventUI(saved).start(nextStage));
             } catch (IOException exception) {
                 new Alert(Alert.AlertType.ERROR, "The photo could not be uploaded: " + exception.getMessage()).showAndWait();
             } catch (RuntimeException exception) {

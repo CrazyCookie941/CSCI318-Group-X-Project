@@ -36,6 +36,11 @@ public class Event {
 
     private Integer registeredCount;
 
+    private Long ownerId;
+
+    @Column(length = 500)
+    private String imageLocation;
+
     public Event() {
     }
 
@@ -135,4 +140,12 @@ public class Event {
     public void setRegisteredCount(Integer registeredCount) {
         this.registeredCount = registeredCount;
     }
+
+    public Long getOwnerId() { return ownerId; }
+
+    public void setOwnerId(Long ownerId) { this.ownerId = ownerId; }
+
+    public String getImageLocation() { return imageLocation; }
+
+    public void setImageLocation(String imageLocation) { this.imageLocation = imageLocation; }
 }

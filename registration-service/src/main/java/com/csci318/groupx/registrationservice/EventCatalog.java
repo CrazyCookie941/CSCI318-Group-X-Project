@@ -1,43 +1,95 @@
 package com.csci318.groupx.registrationservice;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+// The app's single source of events. It now gets them from the event service.
 final class EventCatalog {
-    private static final List<EventListing> EVENTS = new ArrayList<>(loadEvents());
+    private static final String DEFAULT_IMAGE = "/Images/event-ideas-for-party-eventbookings.jpeg";
+    private static final long REFRESH_MS = 5000;
+
+    private static List<EventListing> cache = List.of();
+    private static long loadedAt = 0;
+    private static boolean reachable = true;
 
     private EventCatalog() {
     }
 
-    private static List<EventListing> loadEvents() {
-        List<EventListing> list = new ArrayList<>();
-        try (Connection conn = Database.connect();
-             Statement st = conn.createStatement();
-             ResultSet rs = st.executeQuery("SELECT * FROM events ORDER BY id")) {
-            while (rs.next()) {
-                int ownerValue = rs.getInt("owner_id");
-                Integer ownerId = rs.wasNull() ? null : ownerValue;
-                list.add(new EventListing(
-                        rs.getInt("id"),
-                        rs.getString("title"),
-                        rs.getString("type"),
-                        rs.getString("location"),
-                        formatPrice(rs.getDouble("price")),
-                        rs.getString("size"),
-                        rs.getString("description"),
-                        rs.getString("image_location"),
-                        ownerId));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Could not load events from database", e);
+    // Returns the events, re-fetching from the service at most every 5 seconds
+    static synchronized List<EventListing> getEvents() {
+        if (System.currentTimeMillis() - loadedAt > REFRESH_MS) {
+            refresh();
         }
-        return list;
+        return cache;
+    }
+
+    // False if the last attempt to reach the event service failed
+    static synchronized boolean isServiceReachable() {
+        return reachable;
+    }
+
+    private static void refresh() {
+        try {
+            List<EventListing> loaded = new ArrayList<>();
+            for (EventServiceClient.ServiceEvent event : EventServiceClient.getAll()) {
+                loaded.add(toListing(event));
+            }
+            cache = List.copyOf(loaded);
+            reachable = true;
+        } catch (RuntimeException e) {
+            reachable = false;
+            System.err.println("Could not reach the event service: " + e.getMessage());
+        }
+        loadedAt = System.currentTimeMillis();
+    }
+
+    static synchronized EventListing add(EventListing listing) {
+        User owner = Session.current();
+        EventServiceClient.ServiceEvent toSend = new EventServiceClient.ServiceEvent(
+                null,
+                listing.title(),
+                listing.description(),
+                listing.type(),
+                listing.location(),
+                LocalDateTime.now().plusDays(7).withHour(18).withMinute(0).withSecond(0).withNano(0), // TODO: date picker
+                null,
+                parsePrice(listing.price()),
+                capacityFromSize(listing.size()),
+                0,
+                owner == null ? null : Long.valueOf(owner.id()),
+                listing.imageLocation());
+
+        EventServiceClient.ServiceEvent saved = EventServiceClient.create(toSend);
+        refresh();
+        return toListing(saved);
+    }
+
+    // Only the manager who created an event can delete it
+    static synchronized boolean delete(EventListing listing) {
+        User user = Session.current();
+        if (user == null || listing.ownerId() == null || listing.ownerId() != user.id()) {
+            return false;
+        }
+        EventServiceClient.delete(listing.id());
+        refresh();
+        return true;
+    }
+
+    private static EventListing toListing(EventServiceClient.ServiceEvent event) {
+        Integer ownerId = event.ownerId() == null ? null : Integer.valueOf(event.ownerId().intValue());
+        String image = (event.imageLocation() == null || event.imageLocation().isBlank())
+                ? DEFAULT_IMAGE : event.imageLocation();
+        return new EventListing(
+                event.id() == null ? 0 : event.id().intValue(),
+                event.name(),
+                event.category(),
+                event.location(),
+                formatPrice(event.price() == null ? 0 : event.price()),
+                sizeLabel(event.capacity()),
+                event.description() == null ? "" : event.description(),
+                image,
+                ownerId);
     }
 
     private static String formatPrice(double price) {
@@ -47,46 +99,6 @@ final class EventCatalog {
         return price % 1 == 0
                 ? String.format("$%d", (long) price)
                 : String.format("$%.2f", price);
-    }
-
-    static List<EventListing> getEvents() {
-        return List.copyOf(EVENTS);
-    }
-
-    static void add(EventListing event) {
-        String sql = "INSERT INTO events (title, type, location, price, size, description, image_location, owner_id) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        User owner = Session.current();
-        Integer ownerId = owner == null ? null : owner.id();
-
-        try (Connection conn = Database.connect();
-             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, event.title());
-            ps.setString(2, event.type());
-            ps.setString(3, event.location());
-            ps.setDouble(4, parsePrice(event.price()));
-            ps.setString(5, event.size());
-            ps.setString(6, event.description());
-            ps.setString(7, event.imageLocation());
-            if (ownerId == null) {
-                ps.setNull(8, Types.INTEGER);
-            } else {
-                ps.setInt(8, ownerId);
-            }
-            ps.executeUpdate();
-
-            int newId = 0;
-            try (ResultSet keys = ps.getGeneratedKeys()) {
-                if (keys.next()) {
-                    newId = keys.getInt(1);
-                }
-            }
-
-            EVENTS.add(new EventListing(newId, event.title(), event.type(), event.location(),
-                    event.price(), event.size(), event.description(), event.imageLocation(), ownerId));
-        } catch (SQLException e) {
-            throw new RuntimeException("Could not save event", e);
-        }
     }
 
     static double parsePrice(String text) {
@@ -104,25 +116,36 @@ final class EventCatalog {
         return value;
     }
 
-    static boolean delete(EventListing listing) {
-        User user = Session.current();
-        if (user == null || listing.ownerId() == null || listing.ownerId() != user.id()) {
-            return false;
+    // The service stores a number; the pages show Small, Medium or Large
+    private static String sizeLabel(Integer capacity) {
+        if (capacity == null) {
+            return "Not specified";
         }
-
-        String sql = "DELETE FROM events WHERE id = ? AND owner_id = ?";
-        try (Connection conn = Database.connect();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, listing.id());
-            ps.setInt(2, user.id());
-            if (ps.executeUpdate() == 0) {
-                return false;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Could not delete event", e);
+        if (capacity <= 50) {
+            return "Small";
         }
+        if (capacity <= 500) {
+            return "Medium";
+        }
+        return "Large";
+    }
 
-        EVENTS.removeIf(existing -> existing.id() == listing.id());
-        return true;
+    // The Create form's size box can hold a number or the words small, medium or large
+    private static Integer capacityFromSize(String size) {
+        if (size == null || size.isBlank()) {
+            return null;
+        }
+        String text = size.trim();
+        try {
+            return Integer.parseInt(text.replace(",", ""));
+        } catch (NumberFormatException ignored) {
+            // not a number, so try the words below
+        }
+        return switch (text.toLowerCase()) {
+            case "small" -> 50;
+            case "medium" -> 200;
+            case "large" -> 1000;
+            default -> null;
+        };
     }
 }
