@@ -139,15 +139,15 @@ public class DashboardUI extends Application
     @Override
     public void start(Stage stage)
     {
-        // 1. Root Layout Container
+        // Root Layout Container
         BorderPane rootLayout = new BorderPane();
         rootLayout.setStyle("-fx-background-color: #fafafa;");
 
-        // 2. Styled Top Navigation Bar
+        // Styled Top Navigation Bar
         HBox navigationBar = Navigation.createNavigationBar(stage);
         rootLayout.setTop(navigationBar);
 
-        // 3. LEFT COLUMN: Clean Sidebar Filters
+        // LEFT COLUMN: Clean Sidebar Filters
         VBox filtersPane = new VBox(12);
         filtersPane.setPadding(new Insets(20, 16, 20, 16));
         filtersPane.setPrefWidth(160);
@@ -157,21 +157,45 @@ public class DashboardUI extends Application
         Label filtersTitle = new Label("Filters");
         filtersTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #222222; -fx-padding: 0 0 5 0;");
 
-        ComboBox<String> locationBox = createStyledComboBox("Any location", "Wollongong", "Melbourne", "Sydney", "Brisbane");
-        ComboBox<String> typeBox = createStyledComboBox("Any type", "Conference", "Workshop", "Concert", "Nightclub", "Exhibition", "Community", "Games");
-        ComboBox<String> priceBox = createStyledComboBox("Any price", "Free", "Under $50", "Over $50");
-        ComboBox<String> sizeBox = createStyledComboBox("Any size", "Small", "Medium", "Large");
+        // Location Filter (Editable & Styled)
+        ComboBox<String> locationBox = createStyledComboBox("Perth", "Melbourne", "Sydney", "Brisbane", "Adelaide", "Darwin", "Hobart");
+        locationBox.setEditable(true);
+        locationBox.setValue(null); // Empties the current value selection row
+        locationBox.setPromptText(""); // Ensures no ghost text shows up on startup
+        locationBox.getEditor().setStyle("-fx-background-color: transparent; -fx-padding: 4 0 4 8;");
+        locationBox.setStyle(locationBox.getStyle() + " -fx-background-color: #ffffff; -fx-background-insets: 0; -fx-background-radius: 4; -fx-border-color: #cccccc; -fx-border-radius: 4;");
+
+        // Type Filter (Now Editable & Styled exactly like Location)
+        ComboBox<String> typeBox = createStyledComboBox("Conference", "Workshop", "Concert", "Nightclub", "Exhibition", "Community", "Games", "Festival", "Other");
+        typeBox.setEditable(true);
+        typeBox.setValue(null); // Empties the current value selection row
+        typeBox.setPromptText(""); // Ensures no ghost text shows up on startup
+        typeBox.getEditor().setStyle("-fx-background-color: transparent; -fx-padding: 4 0 4 8;");
+        typeBox.setStyle(typeBox.getStyle() + " -fx-background-color: #ffffff; -fx-background-insets: 0; -fx-background-radius: 4; -fx-border-color: #cccccc; -fx-border-radius: 4;");
+
+        // Custom Numeric Range Input Layout Blocks
+        TextField minPriceField = new TextField();
+        minPriceField.setPromptText("Min $");
+        minPriceField.setPrefWidth(60);
+        minPriceField.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 13px; -fx-padding: 5;");
+
+        TextField maxPriceField = new TextField();
+        maxPriceField.setPromptText("Max $");
+        maxPriceField.setPrefWidth(60);
+        maxPriceField.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 13px; -fx-padding: 5;");
+
+        HBox priceRangeRow = new HBox(8, minPriceField, maxPriceField);
+        priceRangeRow.setAlignment(Pos.CENTER_LEFT);
 
         filtersPane.getChildren().addAll(
                 filtersTitle,
                 createFilterLabel("Location"), locationBox,
                 createFilterLabel("Type"), typeBox,
-                createFilterLabel("Price"), priceBox,
-                createFilterLabel("Size"), sizeBox
+                createFilterLabel("Price Range"), priceRangeRow
         );
         rootLayout.setLeft(filtersPane);
 
-        // 4. CENTRAL CONTENT PANEL
+        // CENTRAL CONTENT PANEL
         VBox centerContentStack = new VBox(25);
         centerContentStack.setPadding(new Insets(25, 40, 25, 25));
         centerContentStack.setAlignment(Pos.TOP_LEFT);
@@ -223,29 +247,124 @@ public class DashboardUI extends Application
         eventScroller.setPrefViewportHeight(150);
         eventScroller.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
         carouselSection.getChildren().addAll(lblFeatured, eventScroller);
-
-        // Build the Search Results container layout panel out-of-view initially
-        VBox searchResultsSection = createSearchResultsSection(events, stage);
-
         // Add only the default visible items to the layout container view on launch
         centerContentStack.getChildren().addAll(searchBarRow, carouselSection);
 
-        // REAL-TIME LISTENER: Instantly swaps between Carousel and Search Results lists
-        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue == null || newValue.trim().isEmpty()) {
-                // If search field is empty, show the Recommendations Carousel section
+        // Extract the UI container holding the rows from the wrapper so we can mutate its children
+        VBox searchResultsSection = createSearchResultsSection(events, stage);
+        // Find the container inside the searchResultsSection (the 2nd element added to it)
+        VBox resultsListContainer = (VBox) searchResultsSection.getChildren().get(1);
+
+        // Helper method to refresh calculations and redraw components
+        Runnable updateSearchResults = () -> {
+            String searchText = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();
+
+            // Extract whatever is currently inside the editable location input bar
+            String rawLocInput = locationBox.getEditor().getText();
+            String customLoc = (rawLocInput == null || "Any location".equalsIgnoreCase(rawLocInput.trim()))
+                    ? "" : rawLocInput.trim().toLowerCase();
+
+            // Extract whatever is currently inside the editable category type input bar
+            String rawTypeInput = typeBox.getEditor().getText();
+            String customType = (rawTypeInput == null || "Any type".equalsIgnoreCase(rawTypeInput.trim()))
+                    ? "" : rawTypeInput.trim().toLowerCase();
+
+            String minPriceText = minPriceField.getText() == null ? "" : minPriceField.getText().trim();
+            String maxPriceText = maxPriceField.getText() == null ? "" : maxPriceField.getText().trim();
+
+            // Filter the live master catalog
+            java.util.List<EventListing> filteredEvents = EventCatalog.getEvents().stream()
+                    .filter(event -> {
+                        // Match Text Query (Title)
+                        boolean matchesText = searchText.isEmpty() ||
+                                event.title().toLowerCase().contains(searchText);
+
+                        // Match Location Filter (Supports partial contains typing)
+                        boolean matchesLocation = customLoc.isEmpty() ||
+                                (event.location() != null && event.location().toLowerCase().contains(customLoc));
+
+                        // Match Custom/Selected Category Type Text (Changed from absolute equality to partial matches)
+                        boolean matchesType = customType.isEmpty() ||
+                                (event.type() != null && event.type().toLowerCase().contains(customType));
+
+                        // Match Custom Numerical Range Constraints
+                        boolean matchesPrice = true;
+                        String rawPriceStr = event.price();
+                        double eventPrice = 0.0;
+
+                        if (rawPriceStr != null && !rawPriceStr.equalsIgnoreCase("Free")) {
+                            try {
+                                String cleanPriceStr = rawPriceStr.replace("$", "").replace(",", "").trim();
+                                eventPrice = Double.parseDouble(cleanPriceStr);
+                            } catch (NumberFormatException e) {
+                                eventPrice = 0.0;
+                            }
+                        }
+
+                        // Validate against Minimum Bounds
+                        if (!minPriceText.isEmpty()) {
+                            try {
+                                double minLimit = Double.parseDouble(minPriceText);
+                                if (eventPrice < minLimit) matchesPrice = false;
+                            } catch (NumberFormatException ignored) {}
+                        }
+
+                        // Validate against Maximum Bounds
+                        if (!maxPriceText.isEmpty()) {
+                            try {
+                                double maxLimit = Double.parseDouble(maxPriceText);
+                                if (eventPrice > maxLimit) matchesPrice = false;
+                            } catch (NumberFormatException ignored) {}
+                        }
+
+                        return matchesText && matchesLocation && matchesType && matchesPrice;
+                    })
+                    .toList();
+
+            // Clear old row view layouts out of DOM tree memory
+            resultsListContainer.getChildren().clear();
+
+            // Rebuild updated elements mapping onto matching queries
+            for (EventListing filteredEvent : filteredEvents) {
+                resultsListContainer.getChildren().add(createSearchResultRow(filteredEvent, stage));
+            }
+
+            // View State Toggle: Evaluates whether all custom inputs are completely pristine
+            boolean noActiveFilters = searchText.isEmpty()
+                    && customLoc.isEmpty()
+                    && customType.isEmpty()
+                    && minPriceText.isEmpty()
+                    && maxPriceText.isEmpty();
+
+            if (noActiveFilters) {
                 centerContentStack.getChildren().remove(searchResultsSection);
                 if (!centerContentStack.getChildren().contains(carouselSection)) {
                     centerContentStack.getChildren().add(carouselSection);
                 }
             } else {
-                // If user is typing, replace it with the Search Results rows section
                 centerContentStack.getChildren().remove(carouselSection);
                 if (!centerContentStack.getChildren().contains(searchResultsSection)) {
                     centerContentStack.getChildren().add(searchResultsSection);
                 }
             }
-        });
+        };
+
+        // Attach the real-time listener updates to search inputs and filter changes
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> updateSearchResults.run());
+
+        // Location listeners
+        locationBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSearchResults.run());
+        locationBox.getEditor().textProperty().addListener((obs, oldVal, newVal) -> updateSearchResults.run());
+
+        // Type listeners (Now tracking selections AND keyboard characters input)
+        typeBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSearchResults.run());
+        typeBox.getEditor().textProperty().addListener((obs, oldVal, newVal) -> updateSearchResults.run());
+
+        minPriceField.textProperty().addListener((obs, oldVal, newVal) -> updateSearchResults.run());
+        maxPriceField.textProperty().addListener((obs, oldVal, newVal) -> updateSearchResults.run());
+
+        // Connect the "Search" button click event to also execute a query refresh action
+        btnSearch.setOnAction(e -> updateSearchResults.run());
 
         // ScrollPane Setup Layer
         ScrollPane scrollWrapper = new ScrollPane(centerContentStack);
@@ -259,7 +378,7 @@ public class DashboardUI extends Application
         BorderPane.setMargin(scrollWrapper, new Insets(0, 15, 0, 0));
         rootLayout.setCenter(scrollWrapper);
 
-        // 5. Stage Setup and Launch Sizing
+        // Stage Setup and Launch Sizing
         stage.setTitle("Event Discovery Dashboard");
 
         Scene scene = new Scene(rootLayout, 1366, 768);
