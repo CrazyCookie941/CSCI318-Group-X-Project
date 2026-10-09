@@ -80,7 +80,7 @@ public class LoginUI extends Application {
                         loginButton.setDisable(false);
 
                         if (error != null) {
-                            message.setText("Cannot connect to the account service. Please ensure the backend is running on port 8082.");
+                            message.setText("Cannot connect to the account service. Please ensure the backend is running on port 8083.");
                             return;
                         }
 

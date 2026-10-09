@@ -98,7 +98,7 @@ public class SignUpUI extends Application {
                         signUpButton.setDisable(false);
 
                         if (error != null) {
-                            message.setText("Cannot connect to the account service. Please ensure the backend is running on port 8082.");
+                            message.setText("Cannot connect to the account service. Please ensure the backend is running on port 8083.");
                             return;
                         }
 

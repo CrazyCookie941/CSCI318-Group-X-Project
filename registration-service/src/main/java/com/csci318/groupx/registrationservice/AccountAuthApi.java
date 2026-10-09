@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 /** Client for the existing Spring Boot account authentication endpoints. */
 final class AccountAuthApi {
 
-    private static final String BASE_URL = "http://localhost:8082/api/auth";
+    private static final String BASE_URL = "http://localhost:8083/api/auth";
     private static final HttpClient CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
             .build();

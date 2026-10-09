@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 public class AccountUI extends Application
 {
     private static final String ACCOUNT_API =
-            "http://localhost:8082/api/accounts/";
+            "http://localhost:8083/api/accounts/";
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
