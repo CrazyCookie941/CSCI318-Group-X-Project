@@ -14,6 +14,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -264,11 +265,7 @@ public class AccountUI extends Application
         );
 
         btnDeleteAccount.setOnAction(event ->
-                new Alert(
-                        Alert.AlertType.CONFIRMATION,
-                        "This action is permanent. " +
-                                "Please confirm you want to delete your account."
-                ).showAndWait()
+                deleteCurrentAccount(stage, accountId, btnDeleteAccount)
         );
 
         profileGrid.add(
@@ -626,6 +623,103 @@ public class AccountUI extends Application
                 emailField,
                 locationField
         );
+    }
+
+    /**
+     * Permanently deletes the signed-in account after password confirmation.
+     * The backend re-verifies the password before deleting anything.
+     */
+    private void deleteCurrentAccount(
+            Stage stage,
+            Long accountId,
+            Button deleteButton
+    ) {
+        if (!CurrentUserSession.isLoggedIn()
+                || !accountId.equals(CurrentUserSession.getAccountId())) {
+            showAlert(Alert.AlertType.WARNING, "Please sign in again.");
+            return;
+        }
+
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Delete account");
+        dialog.setHeaderText("This permanently deletes your account.");
+
+        Label warning = new Label(
+                "Enter your current password to confirm. " +
+                        "You cannot undo this action."
+        );
+        warning.setWrapText(true);
+
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Current password");
+
+        VBox content = new VBox(12, warning, passwordField);
+        content.setPadding(new Insets(10));
+        content.setPrefWidth(360);
+        dialog.getDialogPane().setContent(content);
+
+        ButtonType deleteAction = new ButtonType(
+                "Delete account",
+                ButtonBar.ButtonData.OK_DONE
+        );
+        dialog.getDialogPane().getButtonTypes().addAll(
+                deleteAction,
+                ButtonType.CANCEL
+        );
+        dialog.setResultConverter(buttonType ->
+                buttonType == deleteAction ? passwordField.getText() : null
+        );
+
+        Optional<String> password = dialog.showAndWait();
+        if (password.isEmpty()) {
+            return;
+        }
+        if (password.get().isBlank()) {
+            showAlert(Alert.AlertType.WARNING, "Please enter your password.");
+            return;
+        }
+
+        String body = "{\"password\":\"" + escapeJson(password.get()) + "\"}";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(ACCOUNT_API + accountId))
+                .timeout(Duration.ofSeconds(15))
+                .header("Content-Type", "application/json")
+                .method("DELETE", HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        deleteButton.setDisable(true);
+        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .whenComplete((response, error) -> Platform.runLater(() -> {
+                    deleteButton.setDisable(false);
+
+                    if (error != null) {
+                        showAlert(
+                                Alert.AlertType.ERROR,
+                                "Cannot connect to the account service. " +
+                                        "Your account has not been confirmed as deleted."
+                        );
+                        return;
+                    }
+
+                    if (response.statusCode() == 200) {
+                        CurrentUserSession.logout();
+                        Session.logout();
+                        showAlert(
+                                Alert.AlertType.INFORMATION,
+                                "Your account has been deleted."
+                        );
+                        new LandingPage().start(stage);
+                        return;
+                    }
+
+                    String serverMessage = extractJsonString(
+                            response.body(), "message"
+                    );
+                    if (serverMessage == null || serverMessage.isBlank()) {
+                        serverMessage = "Account deletion failed. Please try again.";
+                    }
+                    showAlert(Alert.AlertType.WARNING, serverMessage);
+                }));
     }
 
     /*

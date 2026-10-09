@@ -1,3 +1,4 @@
+
 package com.csci318.groupx.registrationservice;
 
 import javafx.application.Application;
@@ -54,11 +55,12 @@ public class MyListingsEventManager extends Application
         listingsContainer.setMaxWidth(Double.MAX_VALUE);
         VBox.setVgrow(listingsContainer, Priority.ALWAYS);
 
-        // Load items cleanly without formatting breaks
-        User manager = Session.current();
-        if (manager != null) {
+        // Show only events owned by the currently signed-in event manager.
+        Long managerId = CurrentUserSession.getAccountId();
+        if (managerId != null && CurrentUserSession.isManager()) {
             for (EventListing listing : EventCatalog.getEvents()) {
-                if (listing.ownerId() != null && listing.ownerId() == manager.id()) {
+                if (listing.ownerId() != null
+                        && managerId.longValue() == listing.ownerId().longValue()) {
                     listingsContainer.getChildren().add(createListing(stage, listing));
                 }
             }
@@ -151,7 +153,7 @@ public class MyListingsEventManager extends Application
         removeButton.setPrefWidth(110);
         removeButton.setPrefHeight(32);
         String normalRemoveStyle = "-fx-background-color: transparent; -fx-text-fill: #c62828; -fx-border-color: #d32f2f; -fx-border-radius: 4; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand;";
-        String hoverRemoveStyle = "-fx-background-color: #ffebee; -fx-text-fill: #c62828; -fx-border-color: #d32f2f; -fx-border-radius: 4; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand;";
+        String hoverRemoveStyle = "-fx-background-color: #ffebee; -fx-text-fill: #c62828; -fx-border-color: #d32f2f; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand;";
         removeButton.setStyle(normalRemoveStyle);
         removeButton.setOnMouseEntered(e -> removeButton.setStyle(hoverRemoveStyle));
         removeButton.setOnMouseExited(e -> removeButton.setStyle(normalRemoveStyle));

@@ -21,10 +21,18 @@ public class Account {
 
     private String location;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", length = 20)
+    private AccountRole role = AccountRole.GOER;
+
     public Account() {
     }
 
-    public Account(String username, String email, String passwordHash) {
+    public Account(
+            String username,
+            String email,
+            String passwordHash
+    ) {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
@@ -64,5 +72,13 @@ public class Account {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public AccountRole getRole() {
+        return role == null ? AccountRole.GOER : role;
+    }
+
+    public void setRole(AccountRole role) {
+        this.role = role == null ? AccountRole.GOER : role;
     }
 }

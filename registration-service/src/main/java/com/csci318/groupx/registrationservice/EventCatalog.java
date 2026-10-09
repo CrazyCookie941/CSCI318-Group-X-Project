@@ -45,43 +45,67 @@ final class EventCatalog {
     }
 
     static synchronized EventListing add(EventListing listing) {
-        User owner = Session.current();
+        Long ownerId = CurrentUserSession.getAccountId();
+
+        if (ownerId == null || !CurrentUserSession.isManager()) {
+            throw new IllegalStateException(
+                    "Only logged-in event managers can create events."
+            );
+        }
+
         EventServiceClient.ServiceEvent toSend = new EventServiceClient.ServiceEvent(
                 null,
                 listing.title(),
                 listing.description(),
                 listing.type(),
                 listing.location(),
-                LocalDateTime.now().plusDays(7).withHour(18).withMinute(0).withSecond(0).withNano(0), // TODO: date picker
+                LocalDateTime.now().plusDays(7).withHour(18).withMinute(0).withSecond(0).withNano(0),
                 null,
                 parsePrice(listing.price()),
                 capacityFromSize(listing.size()),
                 0,
-                owner == null ? null : Long.valueOf(owner.id()),
+                ownerId,
                 listing.imageLocation(),
                 listing.latitude(),
-                listing.longitude());
+                listing.longitude()
+        );
 
-        EventServiceClient.ServiceEvent saved = EventServiceClient.create(toSend);
+        EventServiceClient.ServiceEvent saved =
+                EventServiceClient.create(toSend);
+
         refresh();
+
         return toListing(saved);
     }
 
     // Only the manager who created an event can delete it
     static synchronized boolean delete(EventListing listing) {
-        User user = Session.current();
-        if (user == null || listing.ownerId() == null || listing.ownerId() != user.id()) {
+        Long accountId = CurrentUserSession.getAccountId();
+
+        if (listing == null
+                || accountId == null
+                || !CurrentUserSession.isManager()
+                || listing.ownerId() == null
+                || !accountId.equals(listing.ownerId().longValue())) {
             return false;
         }
+
         EventServiceClient.delete(listing.id());
+
         refresh();
+
         return true;
     }
 
     private static EventListing toListing(EventServiceClient.ServiceEvent event) {
-        Integer ownerId = event.ownerId() == null ? null : Integer.valueOf(event.ownerId().intValue());
+        Integer ownerId = event.ownerId() == null
+                ? null
+                : Integer.valueOf(event.ownerId().intValue());
+
         String image = (event.imageLocation() == null || event.imageLocation().isBlank())
-                ? DEFAULT_IMAGE : event.imageLocation();
+                ? DEFAULT_IMAGE
+                : event.imageLocation();
+
         return new EventListing(
                 event.id() == null ? 0 : event.id().intValue(),
                 event.name(),
@@ -93,13 +117,15 @@ final class EventCatalog {
                 image,
                 ownerId,
                 event.latitude(),
-                event.longitude());
+                event.longitude()
+        );
     }
 
     private static String formatPrice(double price) {
         if (price == 0) {
             return "Free";
         }
+
         return price % 1 == 0
                 ? String.format("$%d", (long) price)
                 : String.format("$%.2f", price);
@@ -109,14 +135,19 @@ final class EventCatalog {
         if (text == null) {
             return 0;
         }
+
         String cleaned = text.replace("$", "").replace(",", "").trim();
+
         if (cleaned.isEmpty() || cleaned.equalsIgnoreCase("free")) {
             return 0;
         }
-        double value = Double.parseDouble(cleaned); // throws NumberFormatException if it isn't a number
+
+        double value = Double.parseDouble(cleaned);
+
         if (value < 0) {
             throw new NumberFormatException("Price can't be negative");
         }
+
         return value;
     }
 
@@ -125,12 +156,15 @@ final class EventCatalog {
         if (capacity == null) {
             return "Not specified";
         }
+
         if (capacity <= 50) {
             return "Small";
         }
+
         if (capacity <= 500) {
             return "Medium";
         }
+
         return "Large";
     }
 
@@ -139,12 +173,15 @@ final class EventCatalog {
         if (size == null || size.isBlank()) {
             return null;
         }
+
         String text = size.trim();
+
         try {
             return Integer.parseInt(text.replace(",", ""));
         } catch (NumberFormatException ignored) {
-            // not a number, so try the words below
+            // Not a number, so try the words below.
         }
+
         return switch (text.toLowerCase()) {
             case "small" -> 50;
             case "medium" -> 200;

@@ -1,16 +1,23 @@
 package com.csci318.groupx.registrationservice.service;
 
 import com.csci318.groupx.registrationservice.domain.model.Account;
+import com.csci318.groupx.registrationservice.domain.model.AccountRole;
 import com.csci318.groupx.registrationservice.infrastructure.repository.AccountRepository;
 import com.csci318.groupx.registrationservice.presentation.dto.AccountProfileResponse;
 import com.csci318.groupx.registrationservice.presentation.dto.AuthResponse;
 import com.csci318.groupx.registrationservice.presentation.dto.LoginRequest;
 import com.csci318.groupx.registrationservice.presentation.dto.SignupRequest;
 import com.csci318.groupx.registrationservice.presentation.dto.UpdateAccountRequest;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.client.RestClient;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -19,6 +26,11 @@ public class AccountService {
 
     private static final Logger logger =
             LoggerFactory.getLogger(AccountService.class);
+
+    // The event service must be reachable before account deletion is allowed,
+    // so published events cannot be left without an owner.
+    private static final RestClient EVENT_CLIENT =
+            RestClient.create("http://localhost:8081");
 
     private final AccountRepository accountRepository;
     private final PasswordHasher passwordHasher;
@@ -33,6 +45,10 @@ public class AccountService {
         this.passwordHasher = passwordHasher;
         this.databaseLogService = databaseLogService;
     }
+
+    // ===========================
+    // Account Registration
+    // ===========================
 
     public AuthResponse signup(SignupRequest request) {
 
@@ -60,13 +76,11 @@ public class AccountService {
             );
         }
 
-        String username =
-                request.getUsername().trim();
+        String username = request.getUsername().trim();
 
-        String email =
-                request.getEmail()
-                        .trim()
-                        .toLowerCase(Locale.ROOT);
+        String email = request.getEmail()
+                .trim()
+                .toLowerCase(Locale.ROOT);
 
         if (accountRepository.existsByUsername(username)) {
 
@@ -112,17 +126,56 @@ public class AccountService {
             );
         }
 
+        // Validate the selected account role.
+        AccountRole role;
+
+        try {
+            String requestedRole = request.getRole();
+
+            role = requestedRole == null
+                    || requestedRole.isBlank()
+                    ? AccountRole.GOER
+                    : AccountRole.valueOf(
+                    requestedRole
+                            .trim()
+                            .toUpperCase(Locale.ROOT)
+            );
+
+        } catch (IllegalArgumentException exception) {
+
+            logger.warn(
+                    "Signup rejected because account role was invalid."
+            );
+
+            databaseLogService.warn(
+                    "SIGNUP_FAILED",
+                    null,
+                    "Signup rejected because account role was invalid."
+            );
+
+            return new AuthResponse(
+                    false,
+                    "Invalid account role. Use GOER or MANAGER.",
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        // Hash the password before storing it.
         String passwordHash =
                 passwordHasher.hash(
                         request.getPassword()
                 );
 
-        Account account =
-                new Account(
-                        username,
-                        email,
-                        passwordHash
-                );
+        Account account = new Account(
+                username,
+                email,
+                passwordHash
+        );
+
+        // Store the account role in the database.
+        account.setRole(role);
 
         Account savedAccount =
                 accountRepository.save(account);
@@ -144,9 +197,14 @@ public class AccountService {
                 "Signup successful.",
                 savedAccount.getId(),
                 savedAccount.getUsername(),
-                savedAccount.getEmail()
+                savedAccount.getEmail(),
+                savedAccount.getRole().name()
         );
     }
+
+    // ===========================
+    // Account Login
+    // ===========================
 
     public AuthResponse login(LoginRequest request) {
 
@@ -203,9 +261,9 @@ public class AccountService {
             return invalidLoginResponse();
         }
 
-        Account account =
-                accountOptional.get();
+        Account account = accountOptional.get();
 
+        // Verify the hashed password.
         if (!passwordHasher.matches(
                 request.getPassword(),
                 account.getPasswordHash())) {
@@ -236,14 +294,20 @@ public class AccountService {
                 "Authentication successful."
         );
 
+        // Return role information after successful login.
         return new AuthResponse(
                 true,
                 "Login successful.",
                 account.getId(),
                 account.getUsername(),
-                account.getEmail()
+                account.getEmail(),
+                account.getRole().name()
         );
     }
+
+    // ===========================
+    // Get Account Profile
+    // ===========================
 
     public AccountProfileResponse getAccountProfile(
             Long accountId
@@ -268,9 +332,7 @@ public class AccountService {
         }
 
         Optional<Account> accountOptional =
-                accountRepository.findById(
-                        accountId
-                );
+                accountRepository.findById(accountId);
 
         if (accountOptional.isEmpty()) {
 
@@ -295,8 +357,7 @@ public class AccountService {
             );
         }
 
-        Account account =
-                accountOptional.get();
+        Account account = accountOptional.get();
 
         logger.info(
                 "Account profile accessed. accountId={}, username={}",
@@ -319,6 +380,10 @@ public class AccountService {
                 account.getLocation()
         );
     }
+
+    // ===========================
+    // Update Account Profile
+    // ===========================
 
     public AccountProfileResponse updateAccountProfile(
             Long accountId,
@@ -351,9 +416,7 @@ public class AccountService {
         }
 
         Optional<Account> accountOptional =
-                accountRepository.findById(
-                        accountId
-                );
+                accountRepository.findById(accountId);
 
         if (accountOptional.isEmpty()) {
 
@@ -378,8 +441,7 @@ public class AccountService {
             );
         }
 
-        Account account =
-                accountOptional.get();
+        Account account = accountOptional.get();
 
         String username =
                 request.getUsername().trim();
@@ -395,9 +457,7 @@ public class AccountService {
                         : request.getLocation().trim();
 
         Optional<Account> usernameOwner =
-                accountRepository.findByUsername(
-                        username
-                );
+                accountRepository.findByUsername(username);
 
         if (usernameOwner.isPresent()
                 && !usernameOwner.get()
@@ -426,9 +486,7 @@ public class AccountService {
         }
 
         Optional<Account> emailOwner =
-                accountRepository.findByEmail(
-                        email
-                );
+                accountRepository.findByEmail(email);
 
         if (emailOwner.isPresent()
                 && !emailOwner.get()
@@ -491,6 +549,145 @@ public class AccountService {
         );
     }
 
+    // ===========================
+    // Delete Account
+    // ===========================
+
+    public AccountDeletionResult deleteAccount(Long accountId, String password) {
+        if (accountId == null || isBlank(password)) {
+            databaseLogService.warn(
+                    "ACCOUNT_DELETE_FAILED",
+                    accountId,
+                    "Deletion rejected because account ID or password was missing."
+            );
+            return new AccountDeletionResult(
+                    false,
+                    "Your current password is required.",
+                    AccountDeletionResult.Status.BAD_REQUEST
+            );
+        }
+
+        Optional<Account> accountOptional = accountRepository.findById(accountId);
+        if (accountOptional.isEmpty()) {
+            databaseLogService.warn(
+                    "ACCOUNT_DELETE_FAILED",
+                    accountId,
+                    "Deletion rejected because the account was not found."
+            );
+            return new AccountDeletionResult(
+                    false,
+                    "Account not found.",
+                    AccountDeletionResult.Status.NOT_FOUND
+            );
+        }
+
+        Account account = accountOptional.get();
+        if (!passwordHasher.matches(password, account.getPasswordHash())) {
+            databaseLogService.warn(
+                    "ACCOUNT_DELETE_FAILED",
+                    accountId,
+                    "Deletion rejected because the password was invalid."
+            );
+            return new AccountDeletionResult(
+                    false,
+                    "Incorrect password. Account was not deleted.",
+                    AccountDeletionResult.Status.INVALID_PASSWORD
+            );
+        }
+
+        // Refuse deletion when the event service cannot confirm ownership.
+        // We do not delete other microservices' data implicitly.
+        try {
+            if (hasOwnedEvents(accountId)) {
+                databaseLogService.warn(
+                        "ACCOUNT_DELETE_FAILED",
+                        accountId,
+                        "Deletion blocked because account still owns events."
+                );
+                return new AccountDeletionResult(
+                        false,
+                        "Delete your published events before deleting your account.",
+                        AccountDeletionResult.Status.HAS_EVENTS
+                );
+            }
+        } catch (RuntimeException exception) {
+            logger.warn(
+                    "Account deletion could not verify event ownership. accountId={}",
+                    accountId,
+                    exception
+            );
+            databaseLogService.warn(
+                    "ACCOUNT_DELETE_FAILED",
+                    accountId,
+                    "Deletion blocked because the event service was unavailable."
+            );
+            return new AccountDeletionResult(
+                    false,
+                    "The event service is unavailable. Please try again when it is running.",
+                    AccountDeletionResult.Status.EVENT_SERVICE_UNAVAILABLE
+            );
+        }
+
+        try {
+            accountRepository.delete(account);
+            accountRepository.flush();
+        } catch (DataIntegrityViolationException exception) {
+            logger.warn(
+                    "Account deletion blocked by database references. accountId={}",
+                    accountId,
+                    exception
+            );
+            databaseLogService.warn(
+                    "ACCOUNT_DELETE_FAILED",
+                    accountId,
+                    "Deletion blocked by related database records."
+            );
+            return new AccountDeletionResult(
+                    false,
+                    "This account has related records that must be removed first.",
+                    AccountDeletionResult.Status.RELATED_RECORDS
+            );
+        }
+
+        // Log only the account ID, not the deleted profile or password.
+        databaseLogService.info(
+                "ACCOUNT_DELETED",
+                accountId,
+                "Account deleted successfully."
+        );
+        logger.info("Account deleted. accountId={}", accountId);
+
+        return new AccountDeletionResult(
+                true,
+                "Account deleted successfully.",
+                AccountDeletionResult.Status.DELETED
+        );
+    }
+
+    private boolean hasOwnedEvents(Long accountId) {
+        List<Map<String, Object>> events = EVENT_CLIENT.get()
+                .uri("/api/events")
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<Map<String, Object>>>() {});
+
+        if (events == null) {
+            throw new IllegalStateException("Empty event ownership response.");
+        }
+
+        for (Map<String, Object> event : events) {
+            Object owner = event.get("ownerId");
+            if (owner instanceof Number number
+                    && number.longValue() == accountId.longValue()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ===========================
+    // Find Account By ID
+    // ===========================
+
     public Optional<Account> findAccountById(
             Long accountId
     ) {
@@ -504,10 +701,12 @@ public class AccountService {
                 accountId
         );
 
-        return accountRepository.findById(
-                accountId
-        );
+        return accountRepository.findById(accountId);
     }
+
+    // ===========================
+    // Helper Methods
+    // ===========================
 
     private AuthResponse invalidLoginResponse() {
 
@@ -521,7 +720,6 @@ public class AccountService {
     }
 
     private boolean isBlank(String value) {
-        return value == null
-                || value.isBlank();
+        return value == null || value.isBlank();
     }
 }
