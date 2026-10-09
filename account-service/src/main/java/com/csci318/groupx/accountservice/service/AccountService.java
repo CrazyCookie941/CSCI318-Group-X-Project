@@ -3,6 +3,7 @@ package com.csci318.groupx.accountservice.service;
 import com.csci318.groupx.accountservice.domain.model.Account;
 import com.csci318.groupx.accountservice.domain.model.AccountRole;
 import com.csci318.groupx.accountservice.infrastructure.repository.AccountRepository;
+import com.csci318.groupx.accountservice.messaging.AccountEventPublisher;
 import com.csci318.groupx.accountservice.presentation.dto.AccountProfileResponse;
 import com.csci318.groupx.accountservice.presentation.dto.AuthResponse;
 import com.csci318.groupx.accountservice.presentation.dto.LoginRequest;
@@ -35,15 +36,18 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final PasswordHasher passwordHasher;
     private final DatabaseLogService databaseLogService;
+    private final AccountEventPublisher accountEventPublisher;
 
     public AccountService(
             AccountRepository accountRepository,
             PasswordHasher passwordHasher,
-            DatabaseLogService databaseLogService
+            DatabaseLogService databaseLogService,
+            AccountEventPublisher accountEventPublisher
     ) {
         this.accountRepository = accountRepository;
         this.passwordHasher = passwordHasher;
         this.databaseLogService = databaseLogService;
+        this.accountEventPublisher = accountEventPublisher;
     }
 
     // ===========================
@@ -191,6 +195,7 @@ public class AccountService {
                 savedAccount.getId(),
                 "Account created successfully."
         );
+        accountEventPublisher.accountCreated(savedAccount.getId());
 
         return new AuthResponse(
                 true,
@@ -538,6 +543,7 @@ public class AccountService {
                 savedAccount.getId(),
                 "Account profile updated successfully."
         );
+        accountEventPublisher.accountUpdated(savedAccount.getId());
 
         return new AccountProfileResponse(
                 true,
@@ -656,6 +662,7 @@ public class AccountService {
                 "Account deleted successfully."
         );
         logger.info("Account deleted. accountId={}", accountId);
+        accountEventPublisher.accountDeleted(accountId);
 
         return new AccountDeletionResult(
                 true,
