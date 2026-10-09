@@ -89,6 +89,7 @@ public class AttendeeDetailsUI extends Application
 
         Button btnBack = new Button("Back");
         btnBack.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 11 24 11 24; -fx-font-size: 14px; -fx-cursor: hand;");
+        btnBack.setOnAction(event -> Navigation.goBack(stage));
 
         actionButtons.getChildren().addAll(btnProceed, btnBack);
         leftColumn.getChildren().addAll(title, formGrid, actionButtons);

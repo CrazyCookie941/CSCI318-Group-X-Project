@@ -3,6 +3,7 @@ package com.csci318.groupx.registrationservice;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
@@ -14,18 +15,58 @@ import javafx.scene.paint.Color;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.function.Consumer;
 
 final class Navigation
 {
     private static Popup activePopup;
     private static Button activePopupAnchor;
+    private static final Map<Stage, Deque<Screen>> history = new WeakHashMap<>();
+
+    private record Screen(
+            Scene scene,
+            String title,
+            boolean resizable
+    ) {}
 
     private Navigation() {}
 
     static void goTo(Stage stage, Consumer<Stage> screen)
     {
+        if (stage.getScene() != null)
+        {
+            history.computeIfAbsent(stage, ignored -> new ArrayDeque<>())
+                    .push(new Screen(
+                            stage.getScene(),
+                            stage.getTitle(),
+                            stage.isResizable()
+                    ));
+        }
+
         screen.accept(stage);
+    }
+
+    static void goBack(Stage stage)
+    {
+        Deque<Screen> screens = history.get(stage);
+        if (screens == null || screens.isEmpty())
+        {
+            return;
+        }
+
+        Screen previousScreen = screens.pop();
+        stage.setScene(previousScreen.scene());
+        stage.setTitle(previousScreen.title());
+        stage.setResizable(previousScreen.resizable());
+
+        if (screens.isEmpty())
+        {
+            history.remove(stage);
+        }
     }
 
     static HBox createNavigationBar(Stage stage)

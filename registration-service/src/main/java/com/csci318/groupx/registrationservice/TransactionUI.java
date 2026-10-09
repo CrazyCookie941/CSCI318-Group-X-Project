@@ -99,6 +99,7 @@ public class TransactionUI extends Application
 
         Button btnCancel = new Button("Cancel");
         btnCancel.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 11 24 11 24; -fx-font-size: 14px; -fx-cursor: hand;");
+        btnCancel.setOnAction(event -> Navigation.goBack(stage));
 
         actionButtons.getChildren().addAll(btnPay, btnCancel);
         leftColumn.getChildren().addAll(title, checkoutGrid, actionButtons);
