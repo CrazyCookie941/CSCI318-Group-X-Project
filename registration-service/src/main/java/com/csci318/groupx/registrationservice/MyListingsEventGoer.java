@@ -117,7 +117,8 @@ public class MyListingsEventGoer extends Application
         invoiceButton.setStyle(normalInvoiceStyle);
         invoiceButton.setOnMouseEntered(e -> invoiceButton.setStyle(hoverInvoiceStyle));
         invoiceButton.setOnMouseExited(e -> invoiceButton.setStyle(normalInvoiceStyle));
-        invoiceButton.setOnAction(event -> Navigation.goTo(stage, nextStage -> new TransactionUI().start(nextStage)));
+        invoiceButton.setOnAction(event -> Navigation.goTo(stage,
+                nextStage -> new TransactionUI(listing).start(nextStage)));
 
         // Cancel Booking Button
         Button removeButton = new Button("Cancel Booking");

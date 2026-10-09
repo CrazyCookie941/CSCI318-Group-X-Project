@@ -11,6 +11,17 @@ import javafx.stage.Stage;
 // Displays a modern secure transaction checkout screen matching the ecosystem's design tokens
 public class TransactionUI extends Application
 {
+    private final EventListing event;
+
+    public TransactionUI()
+    {
+        this(null);
+    }
+
+    public TransactionUI(EventListing event)
+    {
+        this.event = event;
+    }
 
     @Override
     public void start(Stage stage)
@@ -117,15 +128,20 @@ public class TransactionUI extends Application
         summaryCard.setPadding(new Insets(20));
         summaryCard.setStyle("-fx-background-color: #f7f7f7; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6;");
 
-        summaryCard.getChildren().addAll(
-                createSummaryRow("Event Item:", "Radiohead Concert Tickets"),
-                createSummaryRow("Quantity:", "2x General Admission"),
-                createSummaryRow("Booking ID:", "#TXN-9841203"),
-                new Separator(),
-                createSummaryRow("Subtotal:", "$100.00"),
-                createSummaryRow("Service Fee:", "$5.00"),
-                createTotalRow("Total Amount:", "$105.00")
-        );
+        if (event == null) {
+            summaryCard.getChildren().add(createSummaryRow("Event:", "No event selected"));
+        } else {
+            String amount = formatAmount(EventCatalog.parsePrice(event.price()));
+            summaryCard.getChildren().addAll(
+                    createSummaryRow("Event:", event.title()),
+                    createSummaryRow("Venue:", event.location()),
+                    createSummaryRow("Type:", event.type()),
+                    createSummaryRow("Ticket:", "1x General Admission"),
+                    new Separator(),
+                    createSummaryRow("Subtotal:", amount),
+                    createTotalRow("Total Amount:", amount)
+            );
+        }
 
         rightColumn.getChildren().addAll(lblSummaryTitle, summaryCard);
 
@@ -195,6 +211,11 @@ public class TransactionUI extends Application
         row.setLeft(leftLabel);
         row.setRight(rightLabel);
         return row;
+    }
+
+    private static String formatAmount(double amount)
+    {
+        return String.format("$%.2f", amount);
     }
 
     public static void main(String[] args) { launch(args); }

@@ -8,11 +8,20 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-import java.util.function.Consumer;
-
 // Displays the ticket details data entry screen matching the ecosystem's design tokens
 public class AttendeeDetailsUI extends Application
 {
+    private final EventListing event;
+
+    public AttendeeDetailsUI()
+    {
+        this(EventCatalog.getEvents().stream().findFirst().orElse(null));
+    }
+
+    public AttendeeDetailsUI(EventListing event)
+    {
+        this.event = event;
+    }
 
     @Override
     public void start(Stage stage)
@@ -57,8 +66,14 @@ public class AttendeeDetailsUI extends Application
         lblTicketType.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #666666;");
 
         ComboBox<String> cbTicket = new ComboBox<>();
-        cbTicket.getItems().addAll("General Admission ($50.00)", "VIP Pass ($120.00)", "Student / Concession ($35.00)");
-        cbTicket.setPromptText("Choose your ticket tier...");
+        if (event != null) {
+            String admission = "General Admission (" + event.price() + ")";
+            cbTicket.getItems().add(admission);
+            cbTicket.setValue(admission);
+        } else {
+            cbTicket.setPromptText("No event selected");
+            cbTicket.setDisable(true);
+        }
         cbTicket.setMaxWidth(Double.MAX_VALUE);
         cbTicket.setPrefHeight(34);
         cbTicket.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 13px;");
@@ -87,7 +102,8 @@ public class AttendeeDetailsUI extends Application
         btnProceed.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 26 11 26; -fx-background-radius: 4; -fx-font-size: 14px; -fx-cursor: hand;");
         btnProceed.setOnMouseEntered(e -> btnProceed.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 26 11 26; -fx-background-radius: 4; -fx-font-size: 14px; -fx-cursor: hand;"));
         btnProceed.setOnMouseExited(e -> btnProceed.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 26 11 26; -fx-background-radius: 4; -fx-font-size: 14px; -fx-cursor: hand;"));
-        btnProceed.setOnAction(event -> Navigation.goTo(stage, nextStage -> new TransactionUI().start(nextStage)));
+        btnProceed.setOnAction(action -> Navigation.goTo(stage,
+                nextStage -> new TransactionUI(event).start(nextStage)));
 
         Button btnBack = new Button("Back");
         btnBack.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 11 24 11 24; -fx-font-size: 14px; -fx-cursor: hand;");
@@ -109,14 +125,19 @@ public class AttendeeDetailsUI extends Application
         summaryCard.setPadding(new Insets(20));
         summaryCard.setStyle("-fx-background-color: #f7f7f7; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6;");
 
-        summaryCard.getChildren().addAll(
-                createSummaryRow("Event:", "Radiohead Concert"),
-                createSummaryRow("Venue:", "Sydney Entertainment Centre"),
-                createSummaryRow("Date:", "Friday, October 24, 2026"),
-                new Separator(),
-                createSummaryRow("Gate Opens:", "6:00 PM"),
-                createSummaryRow("Status:", "Open for Registration")
-        );
+        if (event != null) {
+            summaryCard.getChildren().addAll(
+                    createSummaryRow("Event:", event.title()),
+                    createSummaryRow("Venue:", event.location()),
+                    createSummaryRow("Type:", event.type()),
+                    createSummaryRow("Price:", event.price()),
+                    createSummaryRow("Size:", event.size()),
+                    new Separator(),
+                    createSummaryRow("Details:", event.description())
+            );
+        } else {
+            summaryCard.getChildren().add(createSummaryRow("Event:", "No event selected"));
+        }
 
         rightColumn.getChildren().addAll(lblSummaryTitle, summaryCard);
 
@@ -168,6 +189,9 @@ public class AttendeeDetailsUI extends Application
         Label leftLabel = new Label(labelText);
         leftLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #666666;");
         Label rightLabel = new Label(valText);
+        rightLabel.setWrapText(true);
+        rightLabel.setMaxWidth(160);
+        rightLabel.setAlignment(Pos.CENTER_RIGHT);
         rightLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #222222; -fx-font-weight: bold;");
         row.setLeft(leftLabel);
         row.setRight(rightLabel);
