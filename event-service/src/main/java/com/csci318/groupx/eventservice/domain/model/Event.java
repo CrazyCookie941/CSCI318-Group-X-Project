@@ -41,6 +41,10 @@ public class Event {
     @Column(length = 500)
     private String imageLocation;
 
+    private Double latitude;
+
+    private Double longitude;
+
     public Event() {
     }
 
@@ -148,4 +152,12 @@ public class Event {
     public String getImageLocation() { return imageLocation; }
 
     public void setImageLocation(String imageLocation) { this.imageLocation = imageLocation; }
+
+    public Double getLatitude() { return latitude; }
+
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
 }

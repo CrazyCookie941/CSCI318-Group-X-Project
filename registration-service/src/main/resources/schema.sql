@@ -20,15 +20,17 @@ CREATE CACHED TABLE "PUBLIC"."EVENTS"(
     "SIZE" CHARACTER VARYING(50) NOT NULL,
     "DESCRIPTION" CHARACTER VARYING(2000),
     "IMAGE_LOCATION" CHARACTER VARYING(500),
-    "OWNER_ID" INTEGER
+    "OWNER_ID" INTEGER,
+    "LATITUDE" DOUBLE,
+    "LONGITUDE" DOUBLE
 );   
 ALTER TABLE "PUBLIC"."EVENTS" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_7" PRIMARY KEY("ID");        
 -- 4 +/- SELECT COUNT(*) FROM PUBLIC.EVENTS;   
 INSERT INTO "PUBLIC"."EVENTS" VALUES
-(1, 'Radiohead concert', 'Concert', 'Afterpay Arena', 50.0, 'Large', 'Radiohead''s latest tour to Australia starts in Sydney.', '/Images/394f75e3cb710d620129ea9fef2754f83b5bc54b8e8f4ffcfc2badd46c297059.jpeg', 2),
-(2, 'Nightclub', 'Nightclub', 'Wollongong Central', 35.0, 'Large', 'An 18+ nightclub with loud DJ music and alcohol.', '/Images/Wikipedia_space_ibiza(03).jpg', 2),
-(3, 'Community barbecue', 'Community', 'Sydney Central Park', 15.0, 'Medium', 'Fun lunch for family and friends. All food and refreshments are included with your ticket price entry.', '/Images/park-art-P1020661.jpg', 2),
-(4, 'Bingo night', 'Games', 'Wollongong Community Hall', 0.0, 'Small', 'A classic bingo night for everyone to enjoy.', '/Images/Bingo_night.jpg', 2);               
+(1, 'Radiohead concert', 'Concert', 'Afterpay Arena', 50.0, 'Large', 'Radiohead''s latest tour to Australia starts in Sydney.', '/Images/394f75e3cb710d620129ea9fef2754f83b5bc54b8e8f4ffcfc2badd46c297059.jpeg', 2, -33.8442890, 151.0622385),
+(2, 'Nightclub', 'Nightclub', 'Wollongong Central', 35.0, 'Large', 'An 18+ nightclub with loud DJ music and alcohol.', '/Images/Wikipedia_space_ibiza(03).jpg', 2, -34.4245774, 150.8941979),
+(3, 'Community barbecue', 'Community', 'Sydney Central Park', 15.0, 'Medium', 'Fun lunch for family and friends. All food and refreshments are included with your ticket price entry.', '/Images/park-art-P1020661.jpg', 2, NULL, NULL),
+(4, 'Bingo night', 'Games', 'Wollongong Community Hall', 0.0, 'Small', 'A classic bingo night for everyone to enjoy.', '/Images/Bingo_night.jpg', 2, NULL, NULL);
 ALTER TABLE "PUBLIC"."USERS" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_4D4" CHECK("ROLE" IN('GOER', 'MANAGER')) NOCHECK;             
 ALTER TABLE "PUBLIC"."USERS" ADD CONSTRAINT "PUBLIC"."CONSTRAINT_4D" UNIQUE NULLS DISTINCT ("EMAIL");          
 ALTER TABLE "PUBLIC"."EVENTS" ADD CONSTRAINT "PUBLIC"."FK_EVENTS_OWNER" FOREIGN KEY("OWNER_ID") REFERENCES "PUBLIC"."USERS"("ID") ON DELETE CASCADE NOCHECK;   

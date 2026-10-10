@@ -51,6 +51,10 @@ public class EventService {
                     existingEvent.setPrice(updatedEvent.getPrice());
                     existingEvent.setCapacity(updatedEvent.getCapacity());
                     existingEvent.setRegisteredCount(updatedEvent.getRegisteredCount());
+                    existingEvent.setOwnerId(updatedEvent.getOwnerId());
+                    existingEvent.setImageLocation(updatedEvent.getImageLocation());
+                    existingEvent.setLatitude(updatedEvent.getLatitude());
+                    existingEvent.setLongitude(updatedEvent.getLongitude());
 
                     return eventRepository.save(existingEvent);
                 })

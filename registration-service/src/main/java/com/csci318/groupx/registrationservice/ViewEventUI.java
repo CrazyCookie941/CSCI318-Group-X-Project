@@ -8,8 +8,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
-import javafx.scene.shape.Line;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
 public class ViewEventUI extends Application {
@@ -143,23 +142,23 @@ public class ViewEventUI extends Application {
         Label lblMap = new Label("Map Location");
         lblMap.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #666666;");
 
-        Pane mapPanel = new Pane();
-        mapPanel.setPrefSize(340, 180);
-        mapPanel.setMinSize(340, 180);
-        mapPanel.setMaxSize(340, 180);
-        mapPanel.setStyle("-fx-background-color: linear-gradient(to bottom, #eaf7ea, #dfeee6); -fx-border-color: #b7d7a8; -fx-border-width: 1; -fx-border-radius: 8; -fx-background-radius: 8;");
-        mapPanel.setClip(new Rectangle(340, 180));
-
-        mapPanel.getChildren().addAll(
-                createRoadLine(0, 42, 340, 42, 8),
-                createRoadLine(0, 105, 340, 105, 8),
-                createRoadLine(72, 0, 72, 180, 7),
-                createRoadLine(230, 0, 230, 180, 7),
-                createRoadLine(-10, 155, 350, 15, 5),
-                createLocationMarker(170, 87, event.location())
-        );
-
-        mapSection.getChildren().addAll(lblMap, mapPanel);
+        if (event.latitude() != null && event.longitude() != null
+                && Double.isFinite(event.latitude()) && Double.isFinite(event.longitude())
+                && event.latitude() >= -90 && event.latitude() <= 90
+                && event.longitude() >= -180 && event.longitude() <= 180) {
+            WebView map = new WebView();
+            map.setPrefSize(340, 220);
+            map.setMinSize(340, 220);
+            map.setMaxSize(340, 220);
+            map.getEngine().loadContent(createMapHtml(event.latitude(), event.longitude(), event.location()));
+            mapSection.getChildren().addAll(lblMap, map);
+        } else {
+            Label mapUnavailable = new Label("No verified map location is available for this event.");
+            mapUnavailable.setWrapText(true);
+            mapUnavailable.setPrefSize(340, 70);
+            mapUnavailable.setStyle("-fx-background-color: #f0f0f0; -fx-padding: 12; -fx-text-fill: #666666;");
+            mapSection.getChildren().addAll(lblMap, mapUnavailable);
+        }
         rightColumn.getChildren().addAll(lblImages, imageFrame, mapSection);
 
         mainContent.getChildren().addAll(leftColumn, rightColumn);
@@ -234,34 +233,37 @@ public class ViewEventUI extends Application {
         return card;
     }
 
-    private Line createRoadLine(double startX, double startY, double endX, double endY, double width) {
-        Line line = new Line(startX, startY, endX, endY);
-        line.setStroke(javafx.scene.paint.Color.web("#d2d5d3"));
-        line.setStrokeWidth(width);
-        line.setOpacity(0.8);
-        return line;
-    }
-
-    private StackPane createLocationMarker(double x, double y, String labelText) {
-        StackPane marker = new StackPane();
-        marker.setLayoutX(x - 12);
-        marker.setLayoutY(y - 12);
-        marker.setPrefSize(24, 24);
-        marker.setStyle("-fx-background-color: #d32f2f; -fx-background-radius: 12; -fx-border-radius: 12; -fx-border-color: white; -fx-border-width: 2;");
-
-        Label pin = new Label("📍");
-        pin.setStyle("-fx-font-size: 11px;");
-        marker.getChildren().add(pin);
-
-        Label locationLabel = new Label(labelText);
-        locationLabel.setMaxWidth(150);
-        locationLabel.setWrapText(true);
-        locationLabel.setStyle("-fx-background-color: rgba(255,255,255,0.9); -fx-background-radius: 4; -fx-padding: 3 6; -fx-font-size: 11px; -fx-text-fill: #444444; -fx-font-weight: bold;");
-        locationLabel.setTranslateY(28);
-        locationLabel.setTranslateX(38);
-        marker.getChildren().add(locationLabel);
-
-        return marker;
+    private String createMapHtml(double latitude, double longitude, String location) {
+        String safeLocation = location.replace("\\", "\\\\")
+                .replace("'", "\\'")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n")
+                .replace("\u2028", "\\u2028")
+                .replace("\u2029", "\\u2029")
+                .replace("<", "\\u003C");
+        return """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+                    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                    <style>html, body, #map { width: 100%%; height: 100%%; margin: 0; }</style>
+                </head>
+                <body>
+                    <div id="map"></div>
+                    <script>
+                        const map = L.map('map').setView([%s, %s], 15);
+                        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        }).addTo(map);
+                        L.marker([%s, %s]).addTo(map).bindPopup('%s').openPopup();
+                    </script>
+                </body>
+                </html>
+                """.formatted(latitude, longitude, latitude, longitude, safeLocation);
     }
 
     public static void main(String[] args) {

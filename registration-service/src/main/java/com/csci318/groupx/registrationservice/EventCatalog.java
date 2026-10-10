@@ -58,7 +58,9 @@ final class EventCatalog {
                 capacityFromSize(listing.size()),
                 0,
                 owner == null ? null : Long.valueOf(owner.id()),
-                listing.imageLocation());
+                listing.imageLocation(),
+                listing.latitude(),
+                listing.longitude());
 
         EventServiceClient.ServiceEvent saved = EventServiceClient.create(toSend);
         refresh();
@@ -89,7 +91,9 @@ final class EventCatalog {
                 sizeLabel(event.capacity()),
                 event.description() == null ? "" : event.description(),
                 image,
-                ownerId);
+                ownerId,
+                event.latitude(),
+                event.longitude());
     }
 
     private static String formatPrice(double price) {

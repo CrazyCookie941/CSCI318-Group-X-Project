@@ -45,3 +45,9 @@ Each microservice follows a layered architecture:
 ## Current Status
 
 Initial project skeleton and microservice architecture setup.
+
+## Event Maps
+
+Event managers can search for a venue or address during event creation and select the matching OpenStreetMap geocoding result. The event service stores that result's coordinates with the event, and the event details page uses Leaflet and OpenStreetMap tiles to display the pinned location. The event service backfills known coordinates for the sample venues (Afterpay Arena, Wollongong Central, Sydney Central Park, and Wollongong Community Hall) when it starts; restart it to apply the migration to existing records. Other old events without coordinates show a notice instead of a guessed map.
+
+Location searches are submitted only when the manager presses **Find location**. The registration service caches geocoding results and limits requests to one per second, in line with the public Nominatim service policy. The map requires an internet connection to load Leaflet and map tiles; event creation also sends the searched address to Nominatim. OpenStreetMap attribution is displayed on the map.

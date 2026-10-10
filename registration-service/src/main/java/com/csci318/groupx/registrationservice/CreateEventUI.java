@@ -1,6 +1,7 @@
 package com.csci318.groupx.registrationservice;
 
 import javafx.application.Application;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -8,6 +9,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -60,7 +62,55 @@ public class CreateEventUI extends Application
 
         Label lblLocation = new Label("Event location:");
         TextField txtLocation = new TextField();
-        txtLocation.setPromptText("Enter venue or online address");
+        txtLocation.setPromptText("Enter a venue or street address");
+        Button btnSearchLocation = new Button("Find location");
+        HBox locationSearch = new HBox(8, txtLocation, btnSearchLocation);
+        HBox.setHgrow(txtLocation, Priority.ALWAYS);
+        ComboBox<LocationGeocoder.GeocodedLocation> cbLocationResults = new ComboBox<>();
+        cbLocationResults.setPromptText("Choose the matching real-world location");
+        cbLocationResults.setMaxWidth(Double.MAX_VALUE);
+        final LocationGeocoder.GeocodedLocation[] selectedLocation = {null};
+        cbLocationResults.setOnAction(action -> selectedLocation[0] = cbLocationResults.getValue());
+        txtLocation.textProperty().addListener((observable, previous, current) -> {
+            selectedLocation[0] = null;
+            cbLocationResults.getItems().clear();
+            cbLocationResults.getSelectionModel().clearSelection();
+        });
+        btnSearchLocation.setOnAction(action -> {
+            String query = txtLocation.getText().trim();
+            if (query.isBlank()) {
+                new Alert(Alert.AlertType.WARNING, "Enter a venue or address to search.").showAndWait();
+                return;
+            }
+            btnSearchLocation.setDisable(true);
+            Task<List<LocationGeocoder.GeocodedLocation>> searchTask = new Task<>() {
+                @Override
+                protected List<LocationGeocoder.GeocodedLocation> call() {
+                    return LocationGeocoder.search(query);
+                }
+            };
+            searchTask.setOnSucceeded(result -> {
+                cbLocationResults.getItems().setAll(searchTask.getValue());
+                cbLocationResults.getSelectionModel().clearSelection();
+                selectedLocation[0] = null;
+                if (cbLocationResults.getItems().isEmpty()) {
+                    new Alert(Alert.AlertType.INFORMATION,
+                            "No matching locations were found. Try adding a city or country.").showAndWait();
+                } else {
+                    cbLocationResults.show();
+                }
+                btnSearchLocation.setDisable(false);
+            });
+            searchTask.setOnFailed(result -> {
+                new Alert(Alert.AlertType.ERROR,
+                        "The location could not be searched. Check your internet connection and try again.\n"
+                                + searchTask.getException().getMessage()).showAndWait();
+                btnSearchLocation.setDisable(false);
+            });
+            Thread searchThread = new Thread(searchTask, "event-location-search");
+            searchThread.setDaemon(true);
+            searchThread.start();
+        });
 
         Label lblPrice = new Label("Event price:");
         TextField txtPrice = new TextField();
@@ -115,22 +165,29 @@ public class CreateEventUI extends Application
         formGrid.add(cbEventType, 1, 1);
 
         formGrid.add(lblLocation, 0, 2);
-        formGrid.add(txtLocation, 1, 2);
+        formGrid.add(locationSearch, 1, 2);
+        formGrid.add(new Label("Confirm location:"), 0, 3);
+        formGrid.add(cbLocationResults, 1, 3);
 
-        formGrid.add(lblPrice, 0, 3);
-        formGrid.add(txtPrice, 1, 3);
+        formGrid.add(lblPrice, 0, 4);
+        formGrid.add(txtPrice, 1, 4);
 
-        formGrid.add(lblSize, 0, 4);
-        formGrid.add(txtSize, 1, 4);
+        formGrid.add(lblSize, 0, 5);
+        formGrid.add(txtSize, 1, 5);
 
-        formGrid.add(lblPayment, 0, 5);
-        formGrid.add(cbPaymentPreference, 1, 5);
+        formGrid.add(lblPayment, 0, 6);
+        formGrid.add(cbPaymentPreference, 1, 6);
 
-        formGrid.add(lblMiscDocs, 0, 6);
-        formGrid.add(miscDocUpload, 1, 6);
+        formGrid.add(lblMiscDocs, 0, 7);
+        formGrid.add(miscDocUpload, 1, 7);
 
-        formGrid.add(lblInfo, 0, 7);
-        formGrid.add(txtOtherInfo, 1, 7);
+        formGrid.add(lblInfo, 0, 8);
+        formGrid.add(txtOtherInfo, 1, 8);
+
+        formGrid.getChildren().stream()
+                .filter(Label.class::isInstance)
+                .map(Label.class::cast)
+                .forEach(label -> label.setStyle("-fx-text-fill: #222222"));
 
         final String[] selectedImage = {null};
 
@@ -138,8 +195,11 @@ public class CreateEventUI extends Application
         btnSubmit.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20 10 20; -fx-background-radius: 4;");
 
         btnSubmit.setOnAction(event -> {
-            if (txtTitle.getText().isBlank() || cbEventType.getValue() == null || txtLocation.getText().isBlank()) {
-                new Alert(Alert.AlertType.WARNING, "Please provide an event name, type, and location.").showAndWait();
+            if (txtTitle.getText().isBlank() || cbEventType.getValue() == null || txtLocation.getText().isBlank()
+                    || selectedLocation[0] == null) {
+                new Alert(Alert.AlertType.WARNING,
+                        "Please provide an event name and type, then search for and confirm the event location.")
+                        .showAndWait();
                 return;
             }
 
@@ -155,11 +215,14 @@ public class CreateEventUI extends Application
                 EventListing listing = new EventListing(
                         txtTitle.getText().trim(),
                         cbEventType.getValue(),
-                        txtLocation.getText().trim(),
+                        selectedLocation[0].displayName(),
                         txtPrice.getText().isBlank() ? "Free" : txtPrice.getText().trim(),
                         txtSize.getText().isBlank() ? "Not specified" : txtSize.getText().trim(),
                         txtOtherInfo.getText().isBlank() ? "No additional information provided." : txtOtherInfo.getText().trim(),
-                        imageLocation);
+                        imageLocation,
+                        null,
+                        selectedLocation[0].latitude(),
+                        selectedLocation[0].longitude());
                 EventListing saved = EventCatalog.add(listing);
                 Navigation.goTo(primaryStage, nextStage -> new ViewEventUI(saved).start(nextStage));
             } catch (IOException exception) {
@@ -218,7 +281,10 @@ public class CreateEventUI extends Application
         rightColumn.getChildren().addAll(lblPromoImage, imagePlaceholderBox, uploadButton, paymentSummary);
 
         mainContent.getChildren().addAll(leftColumn, rightColumn);
-        root.setCenter(mainContent);
+        ScrollPane formScrollPane = new ScrollPane(mainContent);
+        formScrollPane.setFitToWidth(true);
+        formScrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        root.setCenter(formScrollPane);
 
         Scene scene = new Scene(root, 1366, 768);
         primaryStage.setTitle("Event Management Workspace");
