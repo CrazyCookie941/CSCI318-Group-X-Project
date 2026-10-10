@@ -64,4 +64,29 @@ public class AccountController {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(response);
     }
+
+    @DeleteMapping("/{accountId}")
+    public ResponseEntity<AccountProfileResponse> deleteAccount(
+            @PathVariable Long accountId
+    ) {
+
+        AccountProfileResponse response =
+                accountService.deleteAccount(accountId);
+
+        if (response.isSuccess()) {
+            return ResponseEntity.ok(response);
+        }
+
+        if ("Account not found.".equals(
+                response.getMessage())) {
+
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(response);
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(response);
+    }
 }

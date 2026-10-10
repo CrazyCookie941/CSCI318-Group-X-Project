@@ -23,15 +23,18 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final PasswordHasher passwordHasher;
     private final DatabaseLogService databaseLogService;
+    private final AccountEventPublisher accountEventPublisher;
 
     public AccountService(
             AccountRepository accountRepository,
             PasswordHasher passwordHasher,
-            DatabaseLogService databaseLogService
+            DatabaseLogService databaseLogService,
+            AccountEventPublisher accountEventPublisher
     ) {
         this.accountRepository = accountRepository;
         this.passwordHasher = passwordHasher;
         this.databaseLogService = databaseLogService;
+        this.accountEventPublisher = accountEventPublisher;
     }
 
     public AuthResponse signup(SignupRequest request) {
@@ -139,6 +142,13 @@ public class AccountService {
                 "Account created successfully."
         );
 
+        accountEventPublisher.publishAccountEvent(
+                "ACCOUNT_CREATED",
+                savedAccount.getId(),
+                savedAccount.getUsername(),
+                savedAccount.getEmail()
+        );
+
         return new AuthResponse(
                 true,
                 "Signup successful.",
@@ -234,6 +244,13 @@ public class AccountService {
                 "LOGIN_SUCCESS",
                 account.getId(),
                 "Authentication successful."
+        );
+
+        accountEventPublisher.publishAccountEvent(
+                "ACCOUNT_LOGGED_IN",
+                account.getId(),
+                account.getUsername(),
+                account.getEmail()
         );
 
         return new AuthResponse(
@@ -481,6 +498,13 @@ public class AccountService {
                 "Account profile updated successfully."
         );
 
+        accountEventPublisher.publishAccountEvent(
+                "ACCOUNT_UPDATED",
+                savedAccount.getId(),
+                savedAccount.getUsername(),
+                savedAccount.getEmail()
+        );
+
         return new AccountProfileResponse(
                 true,
                 "Account profile updated.",
@@ -488,6 +512,85 @@ public class AccountService {
                 savedAccount.getUsername(),
                 savedAccount.getEmail(),
                 savedAccount.getLocation()
+        );
+    }
+
+    public AccountProfileResponse deleteAccount(Long accountId) {
+
+        if (accountId == null) {
+            databaseLogService.warn(
+                    "ACCOUNT_DELETE_FAILED",
+                    null,
+                    "Account deletion rejected because account ID was invalid."
+            );
+
+            return new AccountProfileResponse(
+                    false,
+                    "Invalid account ID.",
+                    null,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        Optional<Account> accountOptional =
+                accountRepository.findById(accountId);
+
+        if (accountOptional.isEmpty()) {
+            logger.warn(
+                    "Account deletion failed. accountId={} not found.",
+                    accountId
+            );
+
+            databaseLogService.warn(
+                    "ACCOUNT_DELETE_FAILED",
+                    accountId,
+                    "Account could not be found for deletion."
+            );
+
+            return new AccountProfileResponse(
+                    false,
+                    "Account not found.",
+                    null,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        Account account = accountOptional.get();
+        String username = account.getUsername();
+        String email = account.getEmail();
+
+        accountRepository.delete(account);
+
+        logger.info(
+                "Account deleted. accountId={}, username={}",
+                accountId,
+                username
+        );
+
+        databaseLogService.info(
+                "ACCOUNT_DELETED",
+                accountId,
+                "Account deleted successfully."
+        );
+
+        accountEventPublisher.publishAccountEvent(
+                "ACCOUNT_DELETED",
+                accountId,
+                username,
+                email
+        );
+
+        return new AccountProfileResponse(
+                true,
+                "Account deleted.",
+                accountId,
+                username,
+                email,
+                account.getLocation()
         );
     }
 

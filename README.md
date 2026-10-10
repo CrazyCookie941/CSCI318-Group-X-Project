@@ -44,7 +44,13 @@ Each microservice follows a layered architecture:
 
 ## Current Status
 
-Initial project skeleton and microservice architecture setup.
+Initial project skeleton and microservice architecture setup. The registration service publishes account lifecycle events to the Kafka topic `account-events`, and the notification service consumes those messages for downstream processing.
+
+## Kafka and microservices
+
+Kafka is a distributed event-stream platform. In this project, services do not call each other directly for account lifecycle events. Instead, the registration service publishes an event such as `ACCOUNT_CREATED`, `ACCOUNT_UPDATED`, or `ACCOUNT_DELETED` to a Kafka topic. Other services like notification-service can subscribe to that topic and react asynchronously.
+
+This keeps the system decoupled: the account service can keep working even when the notification service is temporarily unavailable, and the account service does not need to know how the notification service is implemented.
 
 ## Event Maps
 
