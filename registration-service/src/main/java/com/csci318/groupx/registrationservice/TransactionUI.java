@@ -1,6 +1,7 @@
 package com.csci318.groupx.registrationservice;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -8,215 +9,535 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-// Displays a modern secure transaction checkout screen matching the ecosystem's design tokens
-public class TransactionUI extends Application
-{
+import org.springframework.web.client.RestClientResponseException;
+
+import java.util.Locale;
+
+public class TransactionUI extends Application {
+
     private final EventListing event;
 
-    public TransactionUI()
-    {
+    public TransactionUI() {
         this(null);
     }
 
-    public TransactionUI(EventListing event)
-    {
+    public TransactionUI(EventListing event) {
         this.event = event;
     }
 
     @Override
-    public void start(Stage stage)
-    {
-        // 1. Root Layout Container
+    public void start(Stage stage) {
+
         BorderPane layout = new BorderPane();
-        layout.setStyle("-fx-background-color: #fafafa;"); // Modern light canvas backdrop
+        layout.setStyle("-fx-background-color: #fafafa;");
 
-        // 2. Styled Top Navigation Bar
-        HBox navigationBar = Navigation.createNavigationBar(stage);
-        layout.setTop(navigationBar);
+        layout.setTop(Navigation.createNavigationBar(stage));
 
-        // 3. Central Working Content Pane (Form Left, Order Summary Right)
         HBox mainContent = new HBox(45);
-        mainContent.setPadding(new Insets(35, 45, 35, 45));
+        mainContent.setPadding(
+                new Insets(35, 45, 35, 45)
+        );
         mainContent.setAlignment(Pos.TOP_CENTER);
 
-        // --- LEFT COLUMN: Secure Billing Information ---
+        // LEFT COLUMN
         VBox leftColumn = new VBox(25);
         leftColumn.setMinWidth(460);
 
-        Label title = new Label("Secure Checkout");
-        title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #222222;");
+        Label title = new Label(
+                "Secure Checkout - Simulation"
+        );
+        title.setStyle(
+                "-fx-font-size: 26px;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-text-fill: #222222;"
+        );
 
-        // Structured inputs layout grid
+        Label disclaimer = new Label(
+                "Coursework demo only. No real payment occurs.\n" +
+                        "Please do not enter real card details."
+        );
+        disclaimer.setWrapText(true);
+        disclaimer.setStyle(
+                "-fx-font-size: 13px;" +
+                        "-fx-text-fill: #805300;"
+        );
+
         GridPane checkoutGrid = new GridPane();
         checkoutGrid.setHgap(20);
         checkoutGrid.setVgap(18);
         checkoutGrid.setAlignment(Pos.TOP_LEFT);
 
-        ColumnConstraints labelColumn = new ColumnConstraints(130);
-        ColumnConstraints fieldColumn = new ColumnConstraints(290);
-        checkoutGrid.getColumnConstraints().addAll(labelColumn, fieldColumn);
+        checkoutGrid.getColumnConstraints().addAll(
+                new ColumnConstraints(130),
+                new ColumnConstraints(290)
+        );
 
-        // Add customer and billing details
-        addFormField(checkoutGrid, 0, "Card Number:", new TextField(), "4111 2222 3333 4444");
+        // Payment method selection
+        Label paymentLabel = new Label(
+                "Payment Provider:"
+        );
+        paymentLabel.setStyle(
+                "-fx-font-size: 14px;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-text-fill: #666666;"
+        );
 
-        // Expiry & CVV combined inline sub-row block
-        Label lblExpiration = new Label("Expiration Date:");
-        lblExpiration.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #666666;");
+        ToggleGroup paymentGroup = new ToggleGroup();
 
-        HBox expiryAndCvvRow = new HBox(12);
-        expiryAndCvvRow.setAlignment(Pos.CENTER_LEFT);
+        RadioButton visa =
+                providerButton("Visa", paymentGroup);
 
-        TextField txtExpiry = new TextField();
-        txtExpiry.setPromptText("MM/YY");
-        txtExpiry.setPrefWidth(100);
-        txtExpiry.setPrefHeight(34);
-        txtExpiry.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 10; -fx-font-size: 14px;");
+        RadioButton mastercard =
+                providerButton("Mastercard", paymentGroup);
 
-        TextField txtCvv = new TextField();
-        txtCvv.setPromptText("CVV");
-        txtCvv.setPrefWidth(80);
-        txtCvv.setPrefHeight(34);
-        txtCvv.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 10; -fx-font-size: 14px;");
+        RadioButton paypal =
+                providerButton("PayPal", paymentGroup);
 
-        Label secureShieldIcon = new Label("🔒 Safe");
-        secureShieldIcon.setStyle("-fx-text-fill: #2e7d32; -fx-font-size: 13px; -fx-font-weight: bold;");
+        visa.setSelected(true);
 
-        expiryAndCvvRow.getChildren().addAll(txtExpiry, txtCvv, secureShieldIcon);
-        checkoutGrid.add(lblExpiration, 0, 1);
-        checkoutGrid.add(expiryAndCvvRow, 1, 1);
+        HBox providers = new HBox(
+                18,
+                visa,
+                mastercard,
+                paypal
+        );
+        providers.setAlignment(Pos.CENTER_LEFT);
 
-        // Radio buttons share a toggle group so only one payment provider can be selected
-        Label lblPaymentProvider = new Label("Payment Provider:");
-        lblPaymentProvider.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #666666;");
+        checkoutGrid.add(paymentLabel, 0, 0);
+        checkoutGrid.add(providers, 1, 0);
 
-        ToggleGroup paymentProviderGroup = new ToggleGroup();
-        RadioButton visaOption = createPaymentProviderOption("Visa", paymentProviderGroup);
-        RadioButton mastercardOption = createPaymentProviderOption("Mastercard", paymentProviderGroup);
-        RadioButton paypalOption = createPaymentProviderOption("PayPal", paymentProviderGroup);
+        // Simulated decline switch
+        Label sandboxLabel = new Label(
+                "Test Scenario:"
+        );
+        sandboxLabel.setStyle(
+                "-fx-font-size: 14px;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-text-fill: #666666;"
+        );
 
-        HBox paymentProviderOptions = new HBox(18, visaOption, mastercardOption, paypalOption);
-        paymentProviderOptions.setAlignment(Pos.CENTER_LEFT);
-        checkoutGrid.add(lblPaymentProvider, 0, 2);
-        checkoutGrid.add(paymentProviderOptions, 1, 2);
+        CheckBox decline = new CheckBox(
+                "Simulate declined payment"
+        );
+        decline.setStyle(
+                "-fx-font-size: 13px;" +
+                        "-fx-text-fill: #444444;"
+        );
 
-        // Action Buttons corresponding to the workspace context
+        checkoutGrid.add(sandboxLabel, 0, 1);
+        checkoutGrid.add(decline, 1, 1);
+
+        // Payment feedback
+        Label feedback = new Label();
+        feedback.setWrapText(true);
+        feedback.setMaxWidth(440);
+        feedback.setStyle(
+                "-fx-font-size: 13px;" +
+                        "-fx-text-fill: #555555;"
+        );
+
+        // Action buttons
         HBox actionButtons = new HBox(15);
-        actionButtons.setPadding(new Insets(10, 0, 0, 0));
+        actionButtons.setPadding(
+                new Insets(10, 0, 0, 0)
+        );
 
-        Button btnPay = new Button("Complete Payment");
-        btnPay.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 26 11 26; -fx-background-radius: 4; -fx-font-size: 14px; -fx-cursor: hand;");
-        btnPay.setOnMouseEntered(e -> btnPay.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 26 11 26; -fx-background-radius: 4; -fx-font-size: 14px; -fx-cursor: hand;"));
-        btnPay.setOnMouseExited(e -> btnPay.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 11 26 11 26; -fx-background-radius: 4; -fx-font-size: 14px; -fx-cursor: hand;"));
+        Button btnPay = new Button(
+                "Complete Payment"
+        );
+
+        String payStyle =
+                "-fx-background-color: #007bc4;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-padding: 11 26 11 26;" +
+                        "-fx-background-radius: 4;" +
+                        "-fx-font-size: 14px;" +
+                        "-fx-cursor: hand;";
+
+        btnPay.setStyle(payStyle);
+
+        btnPay.setOnMouseEntered(e -> {
+            if (!btnPay.isDisabled()) {
+                btnPay.setStyle(
+                        payStyle.replace(
+                                "#007bc4",
+                                "#005fa3"
+                        )
+                );
+            }
+        });
+
+        btnPay.setOnMouseExited(e ->
+                btnPay.setStyle(payStyle)
+        );
 
         Button btnCancel = new Button("Back");
-        btnCancel.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-padding: 11 24 11 24; -fx-font-size: 14px; -fx-cursor: hand;");
-        btnCancel.setOnAction(event -> Navigation.goBack(stage));
+        btnCancel.setStyle(
+                "-fx-background-color: transparent;" +
+                        "-fx-text-fill: #555555;" +
+                        "-fx-border-color: #cccccc;" +
+                        "-fx-border-radius: 4;" +
+                        "-fx-padding: 11 24 11 24;" +
+                        "-fx-font-size: 14px;" +
+                        "-fx-cursor: hand;"
+        );
 
-        actionButtons.getChildren().addAll(btnPay, btnCancel);
-        leftColumn.getChildren().addAll(title, checkoutGrid, actionButtons);
+        btnCancel.setOnAction(e ->
+                Navigation.goBack(stage)
+        );
 
-        // --- RIGHT COLUMN: Order Summary Metadata Panel ---
+        actionButtons.getChildren().addAll(
+                btnPay,
+                btnCancel
+        );
+
+        leftColumn.getChildren().addAll(
+                title,
+                disclaimer,
+                checkoutGrid,
+                actionButtons,
+                feedback
+        );
+
+        // RIGHT COLUMN - ORDER SUMMARY
         VBox rightColumn = new VBox(15);
         rightColumn.setMinWidth(300);
-        rightColumn.setPadding(new Insets(50, 0, 0, 0));
+        rightColumn.setPadding(
+                new Insets(50, 0, 0, 0)
+        );
 
-        Label lblSummaryTitle = new Label("Order Summary");
-        lblSummaryTitle.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #666666;");
+        Label summaryTitle = new Label(
+                "Order Summary"
+        );
+        summaryTitle.setStyle(
+                "-fx-font-size: 15px;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-text-fill: #666666;"
+        );
 
-        // Clean metadata information overview block matching settings drawer formats
         VBox summaryCard = new VBox(14);
         summaryCard.setPadding(new Insets(20));
-        summaryCard.setStyle("-fx-background-color: #f7f7f7; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6;");
+        summaryCard.setStyle(
+                "-fx-background-color: #f7f7f7;" +
+                        "-fx-border-color: #e0e0e0;" +
+                        "-fx-border-width: 1;" +
+                        "-fx-border-radius: 6;" +
+                        "-fx-background-radius: 6;"
+        );
 
-        if (event == null) {
-            summaryCard.getChildren().add(createSummaryRow("Event:", "No event selected"));
+        if (event == null || event.id() <= 0) {
+
+            summaryCard.getChildren().add(
+                    summaryRow(
+                            "Event:",
+                            "No valid event selected"
+                    )
+            );
+
+            btnPay.setDisable(true);
+
         } else {
-            String amount = formatAmount(EventCatalog.parsePrice(event.price()));
+
+            String amount = String.format(
+                    Locale.US,
+                    "AUD $%.2f",
+                    EventCatalog.parsePrice(
+                            event.price()
+                    )
+            );
+
             summaryCard.getChildren().addAll(
-                    createSummaryRow("Event:", event.title()),
-                    createSummaryRow("Venue:", event.location()),
-                    createSummaryRow("Type:", event.type()),
-                    createSummaryRow("Ticket:", "1x General Admission"),
+                    summaryRow(
+                            "Event:",
+                            event.title()
+                    ),
+                    summaryRow(
+                            "Venue:",
+                            event.location()
+                    ),
+                    summaryRow(
+                            "Type:",
+                            event.type()
+                    ),
+                    summaryRow(
+                            "Ticket:",
+                            "1x General Admission"
+                    ),
                     new Separator(),
-                    createSummaryRow("Subtotal:", amount),
-                    createTotalRow("Total Amount:", amount)
+                    summaryRow(
+                            "Subtotal:",
+                            amount
+                    ),
+                    totalRow(
+                            "Total Amount:",
+                            amount
+                    )
             );
         }
 
-        rightColumn.getChildren().addAll(lblSummaryTitle, summaryCard);
+        rightColumn.getChildren().addAll(
+                summaryTitle,
+                summaryCard
+        );
 
-        // Combine layout tracks smoothly
-        mainContent.getChildren().addAll(leftColumn, rightColumn);
-        layout.setCenter(mainContent);
+        mainContent.getChildren().addAll(
+                leftColumn,
+                rightColumn
+        );
 
-        // 4. Scroll Wrapper Integration (Safeguards against structural clipping)
-        ScrollPane scrollWrapper = new ScrollPane(mainContent);
-        scrollWrapper.setFitToWidth(true);
-        scrollWrapper.setFitToHeight(true);
-        scrollWrapper.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
-        scrollWrapper.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollWrapper.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        ScrollPane scroll = new ScrollPane(
+                mainContent
+        );
+        scroll.setFitToWidth(true);
+        scroll.setFitToHeight(true);
+        scroll.setStyle(
+                "-fx-background-color: transparent;" +
+                        "-fx-background: transparent;"
+        );
+        scroll.setVbarPolicy(
+                ScrollPane.ScrollBarPolicy.NEVER
+        );
+        scroll.setHbarPolicy(
+                ScrollPane.ScrollBarPolicy.NEVER
+        );
 
-        BorderPane.setMargin(scrollWrapper, new Insets(0, 15, 0, 0));
-        layout.setCenter(scrollWrapper);
+        layout.setCenter(scroll);
 
-        // 5. Stage Initialization Setup
-        stage.setTitle("Secure Payment Gateway");
-        stage.setScene(new Scene(layout, 1366, 768));
+        // COMPLETE PAYMENT ACTION
+        btnPay.setOnAction(action -> {
+
+            if (event == null || event.id() <= 0) {
+                show(
+                        Alert.AlertType.WARNING,
+                        "Event required",
+                        "Please select an event."
+                );
+                return;
+            }
+
+            if (!CurrentUserSession.isLoggedIn()) {
+                show(
+                        Alert.AlertType.WARNING,
+                        "Login required",
+                        "Please sign in before making a payment."
+                );
+                return;
+            }
+
+            if (CurrentUserSession.isManager()) {
+                show(
+                        Alert.AlertType.WARNING,
+                        "Event Goer required",
+                        "Please use an Event Goer account."
+                );
+                return;
+            }
+
+            RadioButton selected =
+                    (RadioButton)
+                            paymentGroup.getSelectedToggle();
+
+            if (selected == null) {
+                show(
+                        Alert.AlertType.WARNING,
+                        "Payment method required",
+                        "Select a payment provider."
+                );
+                return;
+            }
+
+            String method = selected.getText()
+                    .toUpperCase(Locale.ROOT);
+
+            btnPay.setDisable(true);
+            feedback.setText(
+                    "Processing simulated payment..."
+            );
+
+            Long accountId =
+                    CurrentUserSession.getAccountId();
+
+            PaymentApiClient.simulate(
+                    event.id(),
+                    accountId,
+                    method,
+                    decline.isSelected()
+            ).whenComplete((result, error) ->
+
+                    Platform.runLater(() -> {
+
+                        if (error != null) {
+
+                            btnPay.setDisable(false);
+
+                            String detail =
+                                    "Payment could not be completed. " +
+                                            "Check Payment Service (8084) " +
+                                            "and Event Service (8081).";
+
+                            Throwable cause = error;
+
+                            while (cause != null) {
+
+                                if (cause instanceof
+                                        RestClientResponseException responseEx) {
+
+                                    detail =
+                                            "Payment request failed (HTTP " +
+                                                    responseEx.getStatusCode().value() +
+                                                    "). Check service logs.";
+                                    break;
+                                }
+
+                                cause = cause.getCause();
+                            }
+
+                            feedback.setText(detail);
+
+                            show(
+                                    Alert.AlertType.ERROR,
+                                    "Payment not completed",
+                                    detail
+                            );
+
+                        } else if (result == null) {
+
+                            btnPay.setDisable(false);
+                            feedback.setText(
+                                    "Payment Service returned no response."
+                            );
+
+                        } else if (
+                                "SUCCEEDED".equals(result.status())
+                        ) {
+
+                            feedback.setText(
+                                    "Simulation successful. Reference: " +
+                                            result.reference()
+                            );
+
+                            show(
+                                    Alert.AlertType.INFORMATION,
+                                    "Simulated Payment Successful",
+                                    "Payment ID: " +
+                                            result.paymentId() +
+                                            "\nReference: " +
+                                            result.reference() +
+                                            "\nAmount: " +
+                                            result.currency() +
+                                            " " +
+                                            result.amount() +
+                                            "\n\nNo real charge occurred." +
+                                            "\nEvent registration is handled separately."
+                            );
+
+                            // Remain disabled after success.
+
+                        } else {
+
+                            btnPay.setDisable(false);
+
+                            feedback.setText(
+                                    "Simulated payment declined. " +
+                                            "You may try again."
+                            );
+
+                            show(
+                                    Alert.AlertType.WARNING,
+                                    "Simulated Payment Declined",
+                                    "No real charge occurred.\n" +
+                                            "Uncheck the declined payment " +
+                                            "test option to retry."
+                            );
+                        }
+                    })
+            );
+        });
+
+        stage.setTitle(
+                "Secure Checkout - Simulation"
+        );
+        stage.setScene(
+                new Scene(layout, 1366, 768)
+        );
         stage.setResizable(false);
         stage.show();
     }
 
-    private static void addFormField(GridPane grid, int row, String labelText, TextField field, String prompt)
-    {
-        Label label = new Label(labelText);
-        label.setStyle("-fx-font-size: 14px; -fx-text-fill: #666666; -fx-font-weight: bold;");
-
-        field.setPromptText(prompt);
-        field.setMaxWidth(Double.MAX_VALUE);
-        field.setPrefHeight(34);
-        field.setStyle("-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 4 10; -fx-font-size: 14px;");
-
-        grid.add(label, 0, row);
-        grid.add(field, 1, row);
+    private static RadioButton providerButton(
+            String name,
+            ToggleGroup group
+    ) {
+        RadioButton button = new RadioButton(name);
+        button.setToggleGroup(group);
+        button.setStyle(
+                "-fx-font-size: 13px;" +
+                        "-fx-text-fill: #444444;"
+        );
+        return button;
     }
 
-    private static RadioButton createPaymentProviderOption(String provider, ToggleGroup group)
-    {
-        RadioButton option = new RadioButton(provider);
-        option.setToggleGroup(group);
-        option.setStyle("-fx-font-size: 13px; -fx-text-fill: #444444;");
-        return option;
-    }
-
-    private static BorderPane createSummaryRow(String labelText, String valText)
-    {
+    private static BorderPane summaryRow(
+            String key,
+            String value
+    ) {
         BorderPane row = new BorderPane();
-        Label leftLabel = new Label(labelText);
-        leftLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #666666;");
-        Label rightLabel = new Label(valText);
-        rightLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #222222; -fx-font-weight: bold;");
-        row.setLeft(leftLabel);
-        row.setRight(rightLabel);
+
+        Label left = new Label(key);
+        left.setStyle(
+                "-fx-font-size: 13px;" +
+                        "-fx-text-fill: #666666;"
+        );
+
+        Label right = new Label(
+                value == null ? "" : value
+        );
+        right.setStyle(
+                "-fx-font-size: 13px;" +
+                        "-fx-text-fill: #222222;" +
+                        "-fx-font-weight: bold;"
+        );
+
+        row.setLeft(left);
+        row.setRight(right);
         return row;
     }
 
-    private static BorderPane createTotalRow(String labelText, String valText)
-    {
-        BorderPane row = new BorderPane();
-        Label leftLabel = new Label(labelText);
-        leftLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #1a1a1a; -fx-font-weight: bold;");
-        Label rightLabel = new Label(valText);
-        rightLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #007bc4; -fx-font-weight: bold;");
-        row.setLeft(leftLabel);
-        row.setRight(rightLabel);
+    private static BorderPane totalRow(
+            String key,
+            String value
+    ) {
+        BorderPane row = summaryRow(key, value);
+
+        ((Label) row.getLeft()).setStyle(
+                "-fx-font-size: 14px;" +
+                        "-fx-text-fill: #1a1a1a;" +
+                        "-fx-font-weight: bold;"
+        );
+
+        ((Label) row.getRight()).setStyle(
+                "-fx-font-size: 16px;" +
+                        "-fx-text-fill: #007bc4;" +
+                        "-fx-font-weight: bold;"
+        );
+
         return row;
     }
 
-    private static String formatAmount(double amount)
-    {
-        return String.format("$%.2f", amount);
+    private static void show(
+            Alert.AlertType type,
+            String title,
+            String message
+    ) {
+        Alert dialog = new Alert(type);
+        dialog.setTitle(title);
+        dialog.setHeaderText(null);
+        dialog.setContentText(message);
+        dialog.showAndWait();
     }
 
-    public static void main(String[] args) { launch(args); }
+    public static void main(String[] args) {
+        launch(args);
+    }
 }
