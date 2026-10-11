@@ -85,8 +85,13 @@ final class Navigation
 
         Hyperlink eventsLink = createNavigationLink("My events");
         eventsLink.setOnAction(event ->
-                goTo(stage, nextStage ->
-                        new MyListingsEventGoer().start(nextStage))
+                goTo(stage, nextStage -> {
+                    if (CurrentUserSession.isManager()) {
+                        new MyListingsEventManager().start(nextStage);
+                    } else {
+                        new MyListingsEventGoer().start(nextStage);
+                    }
+                })
         );
 
         Region spacer = new Region();
@@ -240,6 +245,7 @@ final class Navigation
              * returning to the landing page.
              */
             CurrentUserSession.logout();
+            Session.logout();
 
             goTo(
                     stage,
