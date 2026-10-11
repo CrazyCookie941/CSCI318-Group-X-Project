@@ -10,7 +10,9 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 
-import java.util.Objects;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class DashboardUI extends Application
 {
@@ -38,10 +40,10 @@ public class DashboardUI extends Application
 
         containerCard.setStyle("-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 4, 0, 0, 2);");
 
-        try {
-            Image image = loadImage(event.imageLocation());
+        Image image = loadImage(event.imageLocation());
+        if (image != null) {
             imageView.setImage(image);
-        } catch (IllegalArgumentException e) {
+        } else {
             // Safe graphical error visual frame
             containerCard.setStyle(containerCard.getStyle() + "-fx-background-color: #ededed; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-background-radius: 4;");
         }
@@ -130,10 +132,31 @@ public class DashboardUI extends Application
 
     private Image loadImage(String location)
     {
-        if (location.startsWith("/")) {
-            return new Image(Objects.requireNonNull(getClass().getResource(location)).toExternalForm());
+        if (location == null || location.isBlank()) {
+            return null;
         }
-        return new Image(java.nio.file.Path.of(location).toUri().toString());
+
+        try {
+            String imageUrl;
+            if (location.startsWith("/")) {
+                URL resource = getClass().getResource(location);
+                if (resource == null) {
+                    return null;
+                }
+                imageUrl = resource.toExternalForm();
+            } else {
+                Path imagePath = Path.of(location);
+                if (!Files.isRegularFile(imagePath)) {
+                    return null;
+                }
+                imageUrl = imagePath.toUri().toString();
+            }
+
+            Image image = new Image(imageUrl);
+            return image.isError() ? null : image;
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 
     @Override

@@ -7,21 +7,23 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.Hyperlink;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.image.Image;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import javafx.scene.control.ButtonType;
 
 // Displays and manages the events uploaded by the current corporate event organiser
 public class MyListingsEventManager extends Application
@@ -98,7 +100,7 @@ public class MyListingsEventManager extends Application
     // Creates one clean modern listing card row configured with left-snapped typography
     private HBox createListing(Stage stage, EventListing listing)
     {
-        String listingName = listing.title();
+        EventListing[] currentListing = {listing};
         HBox listingRow = new HBox(15);
         listingRow.setAlignment(Pos.CENTER_LEFT);
         listingRow.setPadding(new Insets(12, 20, 12, 16));
@@ -112,7 +114,7 @@ public class MyListingsEventManager extends Application
         imageView.setPreserveRatio(true);
 
         // Text Heading Configuration
-        Label name = new Label(listingName);
+        Label name = new Label(currentListing[0].title());
         name.setWrapText(true);
         name.setAlignment(Pos.CENTER_LEFT);
         name.setStyle("-fx-text-fill: #222222; -fx-font-size: 15px; -fx-font-weight: bold;");
@@ -135,18 +137,24 @@ public class MyListingsEventManager extends Application
         viewButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;");
         viewButton.setOnMouseEntered(e -> viewButton.setStyle("-fx-background-color: #005fa3; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
         viewButton.setOnMouseExited(e -> viewButton.setStyle("-fx-background-color: #007bc4; -fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"));
-        viewButton.setOnAction(event -> Navigation.goTo(stage, nextStage -> new ViewEventUI(listing).start(nextStage)));
+        viewButton.setOnAction(event -> Navigation.goTo(stage,
+                nextStage -> new ViewEventUI(currentListing[0]).start(nextStage)));
 
-        // View Invoice Button
-        Button invoiceButton = new Button("Edit Listing");
-        invoiceButton.setPrefWidth(100);
-        invoiceButton.setPrefHeight(32);
-        String normalInvoiceStyle = "-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand;";
-        String hoverInvoiceStyle = "-fx-background-color: #f5f5f5; -fx-text-fill: #333333; -fx-border-color: #999999; -fx-border-radius: 4; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand;";
-        invoiceButton.setStyle(normalInvoiceStyle);
-        invoiceButton.setOnMouseEntered(e -> invoiceButton.setStyle(hoverInvoiceStyle));
-        invoiceButton.setOnMouseExited(e -> invoiceButton.setStyle(normalInvoiceStyle));
-        invoiceButton.setOnAction(event -> showMessage("Invoice Details", "Generating financial invoice tracking slip for: " + listingName));
+        Button editButton = new Button("Edit Listing");
+        editButton.setPrefWidth(100);
+        editButton.setPrefHeight(32);
+        String normalEditStyle = "-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand;";
+        String hoverEditStyle = "-fx-background-color: #f5f5f5; -fx-text-fill: #333333; -fx-border-color: #999999; -fx-border-radius: 4; -fx-font-size: 13px; -fx-font-weight: bold; -fx-cursor: hand;";
+        editButton.setStyle(normalEditStyle);
+        editButton.setOnMouseEntered(e -> editButton.setStyle(hoverEditStyle));
+        editButton.setOnMouseExited(e -> editButton.setStyle(normalEditStyle));
+        editButton.setOnAction(event -> {
+            EventListing updated = editListing(currentListing[0]);
+            if (updated != null) {
+                currentListing[0] = updated;
+                name.setText(updated.title());
+            }
+        });
 
         // Cancel Booking Button
         Button removeButton = new Button("Cancel Event");
@@ -159,7 +167,7 @@ public class MyListingsEventManager extends Application
         removeButton.setOnMouseExited(e -> removeButton.setStyle(normalRemoveStyle));
         removeButton.setOnAction(event -> {
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                    "Delete \"" + listingName + "\"? This can't be undone.",
+                    "Delete \"" + currentListing[0].title() + "\"? This can't be undone.",
                     ButtonType.OK, ButtonType.CANCEL);
             confirm.setTitle("Cancel event");
             confirm.setHeaderText(null);
@@ -168,10 +176,11 @@ public class MyListingsEventManager extends Application
             }
 
             try {
-                if (EventCatalog.delete(listing)) {
+                if (EventCatalog.delete(currentListing[0])) {
                     VBox parentContainer = (VBox) listingRow.getParent();
                     parentContainer.getChildren().remove(listingRow);
-                    showMessage("Event deleted", "\"" + listingName + "\" has been deleted.");
+                    showMessage("Event deleted",
+                            "\"" + currentListing[0].title() + "\" has been deleted.");
                 } else {
                     showMessage("Not allowed", "Only the manager who created this event can delete it.");
                 }
@@ -181,7 +190,7 @@ public class MyListingsEventManager extends Application
         });
 
         MenuItem telemetryItem = new MenuItem("View telemetry");
-        telemetryItem.setOnAction(event -> showTelemetryWindow(listingName));
+        telemetryItem.setOnAction(event -> showTelemetryWindow(currentListing[0].title()));
 
         MenuButton moreButton = new MenuButton("...");
         moreButton.setPrefWidth(42);
@@ -189,11 +198,75 @@ public class MyListingsEventManager extends Application
         moreButton.setStyle("-fx-background-color: transparent; -fx-text-fill: #555555; -fx-border-color: #cccccc; -fx-border-radius: 4; -fx-font-size: 15px; -fx-font-weight: bold; -fx-cursor: hand;");
         moreButton.getItems().add(telemetryItem);
 
-        actionButtonGroup.getChildren().addAll(viewButton, invoiceButton, removeButton, moreButton);
+        actionButtonGroup.getChildren().addAll(viewButton, editButton, removeButton, moreButton);
 
         // ARRANGE NODES CORRECTLY: Name stays on the left, spacer expands in the middle, buttons sit on the right
         listingRow.getChildren().addAll(imageView, name, listingSpacer, actionButtonGroup);
         return listingRow;
+    }
+
+    private EventListing editListing(EventListing listing) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Edit event");
+        dialog.setHeaderText("Update event details");
+        dialog.getDialogPane().getButtonTypes().addAll(
+                ButtonType.OK,
+                ButtonType.CANCEL
+        );
+
+        TextField title = new TextField(listing.title());
+        TextField type = new TextField(listing.type());
+        TextField location = new TextField(listing.location());
+        TextField price = new TextField(listing.price());
+        TextField size = new TextField(listing.size());
+        TextArea description = new TextArea(listing.description());
+        description.setPrefRowCount(4);
+        description.setWrapText(true);
+
+        GridPane fields = new GridPane();
+        fields.setHgap(12);
+        fields.setVgap(10);
+        fields.addRow(0, new Label("Event name:"), title);
+        fields.addRow(1, new Label("Event type:"), type);
+        fields.addRow(2, new Label("Location:"), location);
+        fields.addRow(3, new Label("Price:"), price);
+        fields.addRow(4, new Label("Capacity:"), size);
+        fields.addRow(5, new Label("Description:"), description);
+        dialog.getDialogPane().setContent(fields);
+
+        if (dialog.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+            return null;
+        }
+        if (title.getText().isBlank()
+                || type.getText().isBlank()
+                || location.getText().isBlank()) {
+            showMessage("Invalid event", "Event name, type, and location are required.");
+            return null;
+        }
+
+        try {
+            EventCatalog.parsePrice(price.getText());
+            EventListing updated = EventCatalog.update(new EventListing(
+                    listing.id(),
+                    title.getText().trim(),
+                    type.getText().trim(),
+                    location.getText().trim(),
+                    price.getText().isBlank() ? "Free" : price.getText().trim(),
+                    size.getText().isBlank() ? "Not specified" : size.getText().trim(),
+                    description.getText().trim(),
+                    listing.imageLocation(),
+                    listing.ownerId(),
+                    listing.latitude(),
+                    listing.longitude()
+            ));
+            showMessage("Event updated", "\"" + updated.title() + "\" has been saved.");
+            return updated;
+        } catch (NumberFormatException exception) {
+            showMessage("Invalid price", "Price must be a number or 'Free'.");
+        } catch (RuntimeException exception) {
+            showMessage("Error", "The event could not be updated: " + exception.getMessage());
+        }
+        return null;
     }
 
     private void showTelemetryWindow(String listingName)

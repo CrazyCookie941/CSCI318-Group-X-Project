@@ -6,6 +6,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -17,6 +18,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import org.springframework.web.client.RestClientResponseException;
 
 public class MyListingsEventGoer extends Application
 {
@@ -45,8 +47,31 @@ public class MyListingsEventGoer extends Application
         listingsContainer.setMaxWidth(Double.MAX_VALUE);
         VBox.setVgrow(listingsContainer, Priority.ALWAYS);
 
-        for (EventListing listing : EventCatalog.getEvents()) {
-            listingsContainer.getChildren().add(createListing(stage, listing));
+        Long accountId = CurrentUserSession.getAccountId();
+        boolean bookingsLoaded = false;
+        try {
+            if (accountId == null || CurrentUserSession.isManager()) {
+                throw new IllegalStateException("Sign in as an event goer to view your bookings.");
+            }
+
+            for (EventServiceClient.ServiceRegistration registration
+                    : EventServiceClient.getRegistrations(accountId)) {
+                EventCatalog.getEvents().stream()
+                        .filter(listing -> listing.id() == registration.eventId())
+                        .findFirst()
+                        .ifPresent(listing -> listingsContainer.getChildren().add(
+                                createListing(stage, listing, registration, accountId)
+                        ));
+            }
+            bookingsLoaded = true;
+        } catch (RuntimeException exception) {
+            new Alert(Alert.AlertType.ERROR,
+                    "Your bookings could not be loaded. "
+                            + bookingLoadError(exception))
+                    .showAndWait();
+        }
+        if (bookingsLoaded && listingsContainer.getChildren().isEmpty()) {
+            listingsContainer.getChildren().add(createEmptyMessage());
         }
 
         content.getChildren().addAll(title, listingsContainer);
@@ -68,7 +93,12 @@ public class MyListingsEventGoer extends Application
         stage.show();
     }
 
-    private HBox createListing(Stage stage, EventListing listing)
+    private HBox createListing(
+            Stage stage,
+            EventListing listing,
+            EventServiceClient.ServiceRegistration registration,
+            long accountId
+    )
     {
         HBox listingRow = new HBox(15);
         listingRow.setAlignment(Pos.CENTER_LEFT);
@@ -130,9 +160,31 @@ public class MyListingsEventGoer extends Application
         removeButton.setOnMouseEntered(e -> removeButton.setStyle(hoverRemoveStyle));
         removeButton.setOnMouseExited(e -> removeButton.setStyle(normalRemoveStyle));
         removeButton.setOnAction(event -> {
-            VBox parentContainer = (VBox) listingRow.getParent();
-            parentContainer.getChildren().remove(listingRow);
-            showMessage("Booking Cancelled", "You have successfully cancelled your booking for: " + listing.title());
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                    "Cancel your booking for \"" + listing.title() + "\"?",
+                    ButtonType.OK, ButtonType.CANCEL);
+            confirm.setTitle("Cancel booking");
+            confirm.setHeaderText(null);
+            if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+                return;
+            }
+
+            removeButton.setDisable(true);
+            try {
+                EventServiceClient.cancelRegistration(registration.id(), accountId);
+                VBox parentContainer = (VBox) listingRow.getParent();
+                parentContainer.getChildren().remove(listingRow);
+                if (parentContainer.getChildren().isEmpty()) {
+                    parentContainer.getChildren().add(createEmptyMessage());
+                }
+                showMessage("Booking Cancelled",
+                        "Your booking for \"" + listing.title() + "\" has been cancelled.");
+            } catch (RuntimeException exception) {
+                removeButton.setDisable(false);
+                new Alert(Alert.AlertType.ERROR,
+                        "The booking could not be cancelled: " + exception.getMessage())
+                        .showAndWait();
+            }
         });
 
         actionButtonGroup.getChildren().addAll(viewButton, invoiceButton, removeButton);
@@ -140,6 +192,24 @@ public class MyListingsEventGoer extends Application
         // ARRANGE NODES CORRECTLY: Name stays on the left, spacer expands in the middle, buttons sit on the right
         listingRow.getChildren().addAll(imageView, name, listingSpacer, actionButtonGroup);
         return listingRow;
+    }
+
+    private static Label createEmptyMessage() {
+        Label emptyMessage = new Label("You have no event bookings yet.");
+        emptyMessage.setStyle("-fx-font-size: 14px; -fx-text-fill: #666666;");
+        return emptyMessage;
+    }
+
+    private static String bookingLoadError(RuntimeException exception) {
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause instanceof RestClientResponseException response
+                    && response.getStatusCode().value() == 404) {
+                return "Restart the event service so it loads the bookings API, then try again.";
+            }
+            cause = cause.getCause();
+        }
+        return "Check that the event service is running on port 8081, then try again.";
     }
 
     private static void showMessage(String title, String message)

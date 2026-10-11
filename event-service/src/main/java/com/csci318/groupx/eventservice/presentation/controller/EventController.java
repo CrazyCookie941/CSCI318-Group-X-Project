@@ -2,6 +2,7 @@ package com.csci318.groupx.eventservice.presentation.controller;
 
 import com.csci318.groupx.eventservice.domain.model.Event;
 import com.csci318.groupx.eventservice.presentation.dto.EventScoreResponse;
+import com.csci318.groupx.eventservice.service.EventRegistrationService;
 import com.csci318.groupx.eventservice.service.EventService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,9 +14,14 @@ import java.util.List;
 public class EventController {
 
     private final EventService eventService;
+    private final EventRegistrationService registrationService;
 
-    public EventController(EventService eventService) {
+    public EventController(
+            EventService eventService,
+            EventRegistrationService registrationService
+    ) {
         this.eventService = eventService;
+        this.registrationService = registrationService;
     }
 
     @GetMapping
@@ -99,6 +105,7 @@ public class EventController {
             return ResponseEntity.notFound().build();
         }
 
+        registrationService.removeForDeletedEvent(id);
         eventService.deleteEvent(id);
         return ResponseEntity.noContent().build();
     }

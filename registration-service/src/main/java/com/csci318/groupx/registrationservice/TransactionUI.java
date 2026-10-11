@@ -411,28 +411,40 @@ public class TransactionUI extends Application {
                         } else if (
                                 "SUCCEEDED".equals(result.status())
                         ) {
+                            feedback.setText("Payment succeeded. Saving your booking...");
+                            EventServiceClient.registerAsync(accountId, event.id())
+                                    .whenComplete((registration, registrationError) ->
+                                            Platform.runLater(() -> {
+                                                if (registrationError != null || registration == null) {
+                                                    btnPay.setDisable(false);
+                                                    feedback.setText(
+                                                            "Payment succeeded, but your booking could not be saved. "
+                                                                    + "You can retry to finish registration."
+                                                    );
+                                                    show(
+                                                            Alert.AlertType.ERROR,
+                                                            "Booking not saved",
+                                                            "Your simulated payment succeeded, but the event service "
+                                                                    + "could not save your booking. Retry to complete "
+                                                                    + "registration; the successful payment will not be "
+                                                                    + "charged again."
+                                                    );
+                                                    return;
+                                                }
 
-                            feedback.setText(
-                                    "Simulation successful. Reference: " +
-                                            result.reference()
-                            );
-
-                            show(
-                                    Alert.AlertType.INFORMATION,
-                                    "Simulated Payment Successful",
-                                    "Payment ID: " +
-                                            result.paymentId() +
-                                            "\nReference: " +
-                                            result.reference() +
-                                            "\nAmount: " +
-                                            result.currency() +
-                                            " " +
-                                            result.amount() +
-                                            "\n\nNo real charge occurred." +
-                                            "\nEvent registration is handled separately."
-                            );
-
-                            // Remain disabled after success.
+                                                feedback.setText(
+                                                        "Booking confirmed. Reference: " + result.reference()
+                                                );
+                                                show(
+                                                        Alert.AlertType.INFORMATION,
+                                                        "Booking Confirmed",
+                                                        "Payment ID: " + result.paymentId()
+                                                                + "\nReference: " + result.reference()
+                                                                + "\nAmount: " + result.currency() + " " + result.amount()
+                                                                + "\n\nNo real charge occurred. Your booking is saved."
+                                                );
+                                            })
+                                    );
 
                         } else {
 

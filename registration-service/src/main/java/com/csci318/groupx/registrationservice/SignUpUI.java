@@ -102,6 +102,11 @@ public class SignUpUI extends Application {
                             return;
                         }
 
+                        if (result == null) {
+                            message.setText("The account service returned an empty response.");
+                            return;
+                        }
+
                         if (!result.success()) {
                             message.setText(result.message());
                             return;
@@ -122,7 +127,15 @@ public class SignUpUI extends Application {
                                 result.email(),
                                 result.role()
                         );
-                        Navigation.goTo(stage, nextStage -> new DashboardUI().start(nextStage));
+                        message.setText("Account created. Opening dashboard...");
+                        try {
+                            Navigation.goTo(stage, nextStage -> new DashboardUI().start(nextStage));
+                        } catch (RuntimeException exception) {
+                            message.setText("Your account was created, but the dashboard could not be opened. "
+                                    + "Please sign in to continue.");
+                            System.err.println("Could not open dashboard after signup: "
+                                    + exception.getMessage());
+                        }
                     })
             );
         });

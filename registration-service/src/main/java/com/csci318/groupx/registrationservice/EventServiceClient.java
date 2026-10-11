@@ -8,6 +8,7 @@ import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 // Talks to Michael's event-service. Nothing in the service itself is changed.
 final class EventServiceClient {
@@ -33,6 +34,10 @@ final class EventServiceClient {
     ) {
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record ServiceRegistration(Long id, Long accountId, Long eventId) {
+    }
+
     private static final RestClient CLIENT = RestClient.create("http://localhost:8081");
 
     private EventServiceClient() {
@@ -45,6 +50,13 @@ final class EventServiceClient {
                 .body(new ParameterizedTypeReference<List<ServiceEvent>>() {
                 });
         return events == null ? List.of() : events;
+    }
+
+    static ServiceEvent get(long id) {
+        return CLIENT.get()
+                .uri("/api/events/{id}", id)
+                .retrieve()
+                .body(ServiceEvent.class);
     }
 
     static ServiceEvent create(ServiceEvent event) {
@@ -70,6 +82,45 @@ final class EventServiceClient {
                 .uri("/api/events/{id}", id)
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    static List<ServiceRegistration> getRegistrations(long accountId) {
+        List<ServiceRegistration> registrations = CLIENT.get()
+                .uri(uriBuilder -> uriBuilder.path("/api/registrations")
+                        .queryParam("accountId", accountId)
+                        .build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<ServiceRegistration>>() {
+                });
+        return registrations == null ? List.of() : registrations;
+    }
+
+    static ServiceRegistration register(long accountId, long eventId) {
+        return CLIENT.post()
+                .uri("/api/registrations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new RegistrationRequest(accountId, eventId))
+                .retrieve()
+                .body(ServiceRegistration.class);
+    }
+
+    static CompletableFuture<ServiceRegistration> registerAsync(
+            long accountId,
+            long eventId
+    ) {
+        return CompletableFuture.supplyAsync(() -> register(accountId, eventId));
+    }
+
+    static void cancelRegistration(long registrationId, long accountId) {
+        CLIENT.delete()
+                .uri(uriBuilder -> uriBuilder.path("/api/registrations/{id}")
+                        .queryParam("accountId", accountId)
+                        .build(registrationId))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    private record RegistrationRequest(Long accountId, Long eventId) {
     }
 
     // Quick standalone test: list, create, delete, list again (leaves the service as it found it)

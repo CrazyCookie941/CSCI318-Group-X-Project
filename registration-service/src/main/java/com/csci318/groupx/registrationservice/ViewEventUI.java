@@ -11,6 +11,10 @@ import javafx.scene.layout.*;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 public class ViewEventUI extends Application {
     private final EventListing event;
 
@@ -128,14 +132,10 @@ public class ViewEventUI extends Application {
         imagePlaceholderText.setStyle("-fx-text-fill: #999999; -fx-font-style: italic;");
         imageFrame.getChildren().addAll(imagePlaceholderText, eventImageView);
 
-        try {
-            Image img = event.imageLocation().startsWith("/")
-                    ? new Image(getClass().getResource(event.imageLocation()).toExternalForm())
-                    : new Image(java.nio.file.Path.of(event.imageLocation()).toUri().toString());
+        Image img = loadImage(event.imageLocation());
+        if (img != null) {
             eventImageView.setImage(img);
             imagePlaceholderText.setVisible(false);
-        } catch (IllegalArgumentException e) {
-            imagePlaceholderText.setVisible(true);
         }
 
         VBox mapSection = new VBox(8);
@@ -209,12 +209,10 @@ public class ViewEventUI extends Application {
         imageView.setFitHeight(90);
         imageView.setPreserveRatio(false);
 
-        try {
-            Image img = item.imageLocation().startsWith("/")
-                    ? new Image(getClass().getResource(item.imageLocation()).toExternalForm())
-                    : new Image(java.nio.file.Path.of(item.imageLocation()).toUri().toString());
+        Image img = loadImage(item.imageLocation());
+        if (img != null) {
             imageView.setImage(img);
-        } catch (IllegalArgumentException ignored) {
+        } else {
             imageView.setStyle("-fx-background-color: #eeeeee; -fx-border-color: #cccccc; -fx-border-radius: 6; -fx-background-radius: 6;");
         }
 
@@ -231,6 +229,34 @@ public class ViewEventUI extends Application {
 
         card.getChildren().addAll(imageView, title, location, button);
         return card;
+    }
+
+    private Image loadImage(String imageLocation) {
+        if (imageLocation == null || imageLocation.isBlank()) {
+            return null;
+        }
+
+        try {
+            String imageUrl;
+            if (imageLocation.startsWith("/")) {
+                URL resource = getClass().getResource(imageLocation);
+                if (resource == null) {
+                    return null;
+                }
+                imageUrl = resource.toExternalForm();
+            } else {
+                Path imagePath = Path.of(imageLocation);
+                if (!Files.isRegularFile(imagePath)) {
+                    return null;
+                }
+                imageUrl = imagePath.toUri().toString();
+            }
+
+            Image image = new Image(imageUrl);
+            return image.isError() ? null : image;
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 
     private String createMapHtml(double latitude, double longitude, String location) {

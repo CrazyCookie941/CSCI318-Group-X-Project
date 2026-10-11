@@ -210,6 +210,7 @@ public class CreateEventUI extends Application
                 return;
             }
 
+            EventListing saved;
             try {
                 String imageLocation = copyUploadedImage(selectedImage[0]);
                 EventListing listing = new EventListing(
@@ -223,13 +224,15 @@ public class CreateEventUI extends Application
                         null,
                         selectedLocation[0].latitude(),
                         selectedLocation[0].longitude());
-                EventListing saved = EventCatalog.add(listing);
-                Navigation.goTo(primaryStage, nextStage -> new ViewEventUI(saved).start(nextStage));
+                saved = EventCatalog.add(listing);
             } catch (IOException exception) {
                 new Alert(Alert.AlertType.ERROR, "The photo could not be uploaded: " + exception.getMessage()).showAndWait();
+                return;
             } catch (RuntimeException exception) {
                 new Alert(Alert.AlertType.ERROR, "The event could not be saved: " + exception.getMessage()).showAndWait();
+                return;
             }
+            Navigation.goTo(primaryStage, nextStage -> new ViewEventUI(saved).start(nextStage));
         });
 
         leftColumn.getChildren().addAll(headerTitle, formGrid, btnSubmit);

@@ -73,9 +73,58 @@ final class EventCatalog {
         EventServiceClient.ServiceEvent saved =
                 EventServiceClient.create(toSend);
 
+        updateCache(toListing(saved));
         refresh();
 
         return toListing(saved);
+    }
+
+    // Only the manager who created an event can update it.
+    static synchronized EventListing update(EventListing listing) {
+        Long accountId = CurrentUserSession.getAccountId();
+
+        if (listing == null
+                || accountId == null
+                || !CurrentUserSession.isManager()
+                || listing.ownerId() == null
+                || !accountId.equals(listing.ownerId().longValue())) {
+            throw new IllegalStateException(
+                    "Only the manager who created this event can update it."
+            );
+        }
+
+        EventServiceClient.ServiceEvent existing =
+                EventServiceClient.get(listing.id());
+        if (existing == null) {
+            throw new IllegalStateException("The event could not be found.");
+        }
+
+        String location = listing.location().trim();
+        boolean locationChanged = !location.equals(existing.location());
+        EventServiceClient.ServiceEvent toUpdate =
+                new EventServiceClient.ServiceEvent(
+                        existing.id(),
+                        listing.title().trim(),
+                        listing.description(),
+                        listing.type(),
+                        location,
+                        existing.startDateTime(),
+                        existing.endDateTime(),
+                        parsePrice(listing.price()),
+                        capacityFromSize(listing.size()),
+                        existing.registeredCount(),
+                        existing.ownerId(),
+                        existing.imageLocation(),
+                        locationChanged ? null : existing.latitude(),
+                        locationChanged ? null : existing.longitude()
+                );
+
+        EventListing saved = toListing(
+                EventServiceClient.update(listing.id(), toUpdate)
+        );
+        updateCache(saved);
+        refresh();
+        return saved;
     }
 
     // Only the manager who created an event can delete it
@@ -92,9 +141,21 @@ final class EventCatalog {
 
         EventServiceClient.delete(listing.id());
 
+        cache = cache.stream()
+                .filter(event -> event.id() != listing.id())
+                .toList();
+        loadedAt = 0;
         refresh();
 
         return true;
+    }
+
+    private static void updateCache(EventListing listing) {
+        List<EventListing> updated = new ArrayList<>(cache);
+        updated.removeIf(event -> event.id() == listing.id());
+        updated.add(listing);
+        cache = List.copyOf(updated);
+        loadedAt = 0;
     }
 
     private static EventListing toListing(EventServiceClient.ServiceEvent event) {
