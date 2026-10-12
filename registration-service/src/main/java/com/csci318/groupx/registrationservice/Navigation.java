@@ -1,7 +1,10 @@
 package com.csci318.groupx.registrationservice;
 
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -14,11 +17,13 @@ import javafx.scene.shape.SVGPath;
 import javafx.scene.paint.Color;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 final class Navigation
@@ -97,11 +102,21 @@ final class Navigation
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button notificationButton =
-                createHeaderButton(
-                        createNotificationIcon(),
-                        "Notifications"
-                );
+        Label unreadBadge = new Label();
+        unreadBadge.setVisible(false);
+        unreadBadge.setManaged(false);
+        unreadBadge.setMinSize(18, 18);
+        unreadBadge.setAlignment(Pos.CENTER);
+        unreadBadge.setStyle(
+                "-fx-background-color: #d32f2f; -fx-text-fill: white; " +
+                        "-fx-font-size: 10px; -fx-font-weight: bold; " +
+                        "-fx-background-radius: 10; -fx-padding: 1 4;"
+        );
+        StackPane notificationGraphic = new StackPane(createNotificationIcon(), unreadBadge);
+        notificationGraphic.setMinSize(30, 30);
+        notificationGraphic.setPrefSize(30, 30);
+        StackPane.setAlignment(unreadBadge, Pos.TOP_RIGHT);
+        Button notificationButton = createHeaderButton(notificationGraphic, "Notifications");
 
         Button profileButton =
                 createHeaderButton(
@@ -110,8 +125,13 @@ final class Navigation
                 );
 
         notificationButton.setOnAction(event ->
-                showNotificationsPopup(notificationButton)
+                showNotificationsPopup(notificationButton, unreadBadge)
         );
+        refreshUnreadBadge(unreadBadge);
+        Timeline badgeRefresh = new Timeline(
+                new KeyFrame(Duration.seconds(20), event -> refreshUnreadBadge(unreadBadge)));
+        badgeRefresh.setCycleCount(Timeline.INDEFINITE);
+        badgeRefresh.play();
 
         profileButton.setOnAction(event ->
                 showProfilePopup(profileButton, stage)
@@ -267,10 +287,13 @@ final class Navigation
     }
 
     private static void showNotificationsPopup(
-            Button notificationButton
+            Button notificationButton,
+            Label unreadBadge
     )
     {
         VBox menu = createPopupMenu();
+        menu.setMinWidth(300);
+        menu.setMaxWidth(380);
 
         Label title =
                 new Label("Notifications");
@@ -281,24 +304,121 @@ final class Navigation
                         "-fx-text-fill: #222222;"
         );
 
-        Label notification =
-                new Label("No new notifications");
-
-        notification.setStyle(
-                "-fx-font-size: 13px; " +
-                        "-fx-text-fill: #666666;"
-        );
-
         menu.getChildren().addAll(
                 title,
-                new Separator(),
-                notification
+                new Separator()
         );
 
         showPopup(
                 menu,
                 notificationButton
         );
+        loadNotifications(menu, unreadBadge);
+    }
+
+    private static void loadNotifications(VBox menu, Label unreadBadge)
+    {
+        Long accountId = CurrentUserSession.getAccountId();
+        if (accountId == null) {
+            menu.getChildren().add(new Label("Sign in to view notifications."));
+            return;
+        }
+
+        Label loading = new Label("Loading notifications...");
+        menu.getChildren().add(loading);
+        CompletableFuture.supplyAsync(() -> NotificationApiClient.list(accountId))
+                .whenComplete((notifications, error) -> Platform.runLater(() -> {
+                    menu.getChildren().remove(loading);
+                    if (error != null) {
+                        menu.getChildren().add(new Label(
+                                "Notifications are unavailable. Please try again later."));
+                        return;
+                    }
+                    if (notifications.isEmpty()) {
+                        menu.getChildren().add(new Label("No notifications."));
+                    } else {
+                        notifications.forEach(notification ->
+                                menu.getChildren().add(createNotificationCard(
+                                        notification, accountId, menu, unreadBadge)));
+                    }
+                    refreshUnreadBadge(unreadBadge);
+                }));
+    }
+
+    private static VBox createNotificationCard(
+            NotificationApiClient.Notification notification,
+            long accountId,
+            VBox menu,
+            Label unreadBadge
+    )
+    {
+        Label heading = new Label(notification.title());
+        heading.setWrapText(true);
+        heading.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #222222;");
+
+        Label message = new Label(notification.message());
+        message.setWrapText(true);
+        message.setStyle("-fx-font-size: 13px; -fx-text-fill: #444444;");
+
+        HBox actions = new HBox(8);
+        if (!notification.read()) {
+            Button markRead = createPopupButton("Mark read");
+            markRead.setOnAction(event -> runNotificationAction(
+                    () -> NotificationApiClient.markRead(notification.id(), accountId),
+                    menu, unreadBadge));
+            actions.getChildren().add(markRead);
+        } else {
+            Button clear = createPopupButton("Clear");
+            clear.setOnAction(event -> runNotificationAction(
+                    () -> NotificationApiClient.clear(notification.id(), accountId),
+                    menu, unreadBadge));
+            actions.getChildren().add(clear);
+        }
+
+        VBox card = new VBox(5, heading, message, actions);
+        card.setPadding(new Insets(8, 0, 8, 0));
+        card.setStyle("-fx-border-color: transparent transparent #eeeeee transparent;");
+        return card;
+    }
+
+    private static void runNotificationAction(
+            Runnable action,
+            VBox menu,
+            Label unreadBadge
+    )
+    {
+        CompletableFuture.runAsync(action)
+                .whenComplete((ignored, error) -> Platform.runLater(() -> {
+                    if (error != null) {
+                        menu.getChildren().add(new Label(
+                                "Could not update notification. Please try again."));
+                    } else {
+                        menu.getChildren().remove(2, menu.getChildren().size());
+                        loadNotifications(menu, unreadBadge);
+                    }
+                    refreshUnreadBadge(unreadBadge);
+                }));
+    }
+
+    private static void refreshUnreadBadge(Label unreadBadge)
+    {
+        Long accountId = CurrentUserSession.getAccountId();
+        if (accountId == null) {
+            unreadBadge.setVisible(false);
+            unreadBadge.setManaged(false);
+            return;
+        }
+        CompletableFuture.supplyAsync(() -> NotificationApiClient.unreadCount(accountId))
+                .whenComplete((count, error) -> Platform.runLater(() -> {
+                    if (error != null || count == null || count <= 0) {
+                        unreadBadge.setVisible(false);
+                        unreadBadge.setManaged(false);
+                    } else {
+                        unreadBadge.setText(count > 99 ? "99+" : Long.toString(count));
+                        unreadBadge.setVisible(true);
+                        unreadBadge.setManaged(true);
+                    }
+                }));
     }
 
     private static VBox createPopupMenu()

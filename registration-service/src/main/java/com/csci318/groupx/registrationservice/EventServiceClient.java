@@ -30,7 +30,8 @@ final class EventServiceClient {
             Long ownerId,
             String imageLocation,
             Double latitude,
-            Double longitude
+            Double longitude,
+            String status
     ) {
     }
 
@@ -128,7 +129,7 @@ final class EventServiceClient {
         System.out.println("Events before: " + getAll());
         ServiceEvent created = create(new ServiceEvent(null, "Client test", "Made by EventServiceClient",
                 "Concert", "Sydney", LocalDateTime.now().plusDays(7), null, 25.0, 100, 0,
-                2L, "/Images/Bingo_night.jpg", null, null));
+                2L, "/Images/Bingo_night.jpg", null, null, "SCHEDULED"));
         System.out.println("Created: " + created);
         delete(created.id());
         System.out.println("Events after: " + getAll());

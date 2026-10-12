@@ -13,7 +13,7 @@ final class InitialiseEvents {
                              Double latitude, Double longitude) {
         EventServiceClient.create(new EventServiceClient.ServiceEvent(
                 null, name, description, category, location, start, null, price, capacity, 0,
-                2L, image, latitude, longitude));
+                2L, image, latitude, longitude, "SCHEDULED"));
         System.out.println("Added " + name);
     }
 

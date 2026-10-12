@@ -10,6 +10,8 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
 
     List<EventRegistration> findByAccountId(Long accountId);
 
+    List<EventRegistration> findByEventId(Long eventId);
+
     Optional<EventRegistration> findByAccountIdAndEventId(Long accountId, Long eventId);
 
     long deleteByIdAndAccountId(Long id, Long accountId);

@@ -35,6 +35,9 @@ public class EventService {
     }
 
     public Event createEvent(Event event) {
+        if (event.getStatus() == null || event.getStatus().isBlank()) {
+            event.setStatus("SCHEDULED");
+        }
         return eventRepository.save(event);
     }
 
@@ -55,6 +58,9 @@ public class EventService {
                     existingEvent.setImageLocation(updatedEvent.getImageLocation());
                     existingEvent.setLatitude(updatedEvent.getLatitude());
                     existingEvent.setLongitude(updatedEvent.getLongitude());
+                    if (updatedEvent.getStatus() != null && !updatedEvent.getStatus().isBlank()) {
+                        existingEvent.setStatus(updatedEvent.getStatus());
+                    }
 
                     return eventRepository.save(existingEvent);
                 })

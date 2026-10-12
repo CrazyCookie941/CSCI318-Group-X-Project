@@ -67,7 +67,8 @@ final class EventCatalog {
                 ownerId,
                 listing.imageLocation(),
                 listing.latitude(),
-                listing.longitude()
+                listing.longitude(),
+                "SCHEDULED"
         );
 
         EventServiceClient.ServiceEvent saved =
@@ -116,7 +117,8 @@ final class EventCatalog {
                         existing.ownerId(),
                         existing.imageLocation(),
                         locationChanged ? null : existing.latitude(),
-                        locationChanged ? null : existing.longitude()
+                        locationChanged ? null : existing.longitude(),
+                        listing.status()
                 );
 
         EventListing saved = toListing(
@@ -178,7 +180,8 @@ final class EventCatalog {
                 image,
                 ownerId,
                 event.latitude(),
-                event.longitude()
+                event.longitude(),
+                event.status() == null ? "SCHEDULED" : event.status()
         );
     }
 

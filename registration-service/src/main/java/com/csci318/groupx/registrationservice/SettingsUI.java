@@ -1,20 +1,25 @@
 package com.csci318.groupx.registrationservice;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+
+import java.util.concurrent.CompletableFuture;
 
 // Displays expandable account and application settings sections with a clean, unified aesthetic
 public class SettingsUI extends Application
@@ -49,7 +54,7 @@ public class SettingsUI extends Application
         settingsContainer.getChildren().addAll(
                 createSettingsSection("Account details", "Update your name, email address, and account preferences."),
                 createSettingsSection("Financial information", "Manage payment methods, transactions, and billing information."),
-                createSettingsSection("Notifications", "Choose which event reminders and account updates you receive dynamically."),
+                createSettingsSection("Notifications", "Choose whether to receive event notifications and which area to follow.", createNotificationSettingsContent()),
                 createSettingsSection("Other", "View system version logs, documentation resources, and corporate terms.", createOtherSettingsContent())
         );
 
@@ -70,6 +75,67 @@ public class SettingsUI extends Application
         stage.setTitle("Application Settings");
         stage.setScene(new Scene(layout, 1366, 768)); // Matching design width geometry safely
         stage.show();
+    }
+
+    private static VBox createNotificationSettingsContent()
+    {
+        CheckBox enabled = new CheckBox("Receive notifications");
+        TextField area = new TextField();
+        area.setPromptText("Area or suburb to follow (for example, Sydney)");
+        area.setMaxWidth(420);
+        Button save = new Button("Save notification settings");
+        Label status = new Label();
+        VBox controls = new VBox(10,
+                enabled,
+                new Label("Notify me when a new event is posted in this area:"),
+                area,
+                save,
+                status);
+
+        Long accountId = CurrentUserSession.getAccountId();
+        if (accountId == null) {
+            enabled.setDisable(true);
+            area.setDisable(true);
+            save.setDisable(true);
+            status.setText("Sign in to manage notification settings.");
+            return controls;
+        }
+
+        enabled.setDisable(true);
+        area.setDisable(true);
+        save.setDisable(true);
+        status.setText("Loading settings...");
+        CompletableFuture.supplyAsync(() -> NotificationApiClient.preference(accountId))
+                .whenComplete((preference, error) -> Platform.runLater(() -> {
+                    if (error != null || preference == null) {
+                        status.setText("Could not load notification settings.");
+                        return;
+                    }
+                    enabled.setSelected(preference.enabled());
+                    area.setText(preference.area() == null ? "" : preference.area());
+                    enabled.setDisable(false);
+                    area.setDisable(false);
+                    save.setDisable(false);
+                    status.setText("");
+                }));
+
+        save.setOnAction(event -> {
+            enabled.setDisable(true);
+            area.setDisable(true);
+            save.setDisable(true);
+            status.setText("Saving...");
+            CompletableFuture.supplyAsync(() -> NotificationApiClient.savePreference(
+                            accountId, enabled.isSelected(), area.getText()))
+                    .whenComplete((saved, error) -> Platform.runLater(() -> {
+                        enabled.setDisable(false);
+                        area.setDisable(false);
+                        save.setDisable(false);
+                        status.setText(error == null && saved != null
+                                ? "Notification settings saved."
+                                : "Could not save settings. Please try again.");
+                    }));
+        });
+        return controls;
     }
 
     // Creates a consistently styled hyperlink navigation item matching prior designs

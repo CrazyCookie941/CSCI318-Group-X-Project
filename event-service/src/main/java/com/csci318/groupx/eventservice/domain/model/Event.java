@@ -45,6 +45,9 @@ public class Event {
 
     private Double longitude;
 
+    @Column
+    private String status = "SCHEDULED";
+
     public Event() {
     }
 
@@ -160,4 +163,10 @@ public class Event {
     public Double getLongitude() { return longitude; }
 
     public void setLongitude(Double longitude) { this.longitude = longitude; }
+
+    public String getStatus() { return status == null || status.isBlank() ? "SCHEDULED" : status; }
+
+    public void setStatus(String status) {
+        this.status = status == null || status.isBlank() ? "SCHEDULED" : status;
+    }
 }

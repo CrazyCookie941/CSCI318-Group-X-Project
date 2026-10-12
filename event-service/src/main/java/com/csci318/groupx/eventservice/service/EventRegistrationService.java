@@ -31,6 +31,15 @@ public class EventRegistrationService {
         return registrationRepository.findByAccountId(accountId);
     }
 
+    @Transactional(readOnly = true)
+    public List<Long> getAccountIdsByEventId(Long eventId) {
+        requireValidId(eventId, "eventId");
+        return registrationRepository.findByEventId(eventId).stream()
+                .map(registration -> registration.getAccountId())
+                .distinct()
+                .toList();
+    }
+
     @Transactional
     public EventRegistration register(Long accountId, Long eventId) {
         requireValidId(accountId, "accountId");
@@ -52,6 +61,13 @@ public class EventRegistrationService {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "This event has reached capacity."
+            );
+        }
+        if (event.getStatus() != null
+                && !event.getStatus().equalsIgnoreCase("SCHEDULED")) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "This event is not accepting registrations."
             );
         }
 
