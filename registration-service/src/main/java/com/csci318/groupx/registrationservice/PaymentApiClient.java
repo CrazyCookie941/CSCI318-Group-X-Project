@@ -20,7 +20,7 @@ final class PaymentApiClient {
         factory.setReadTimeout(10000);
 
         CLIENT = RestClient.builder()
-                .baseUrl("http://localhost:8084")
+                .baseUrl("http://localhost:8085")
                 .requestFactory(factory)
                 .build();
     }

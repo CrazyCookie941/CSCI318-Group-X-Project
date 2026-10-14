@@ -11,10 +11,6 @@ import javafx.scene.layout.*;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 public class ViewEventUI extends Application {
     private final EventListing event;
 
@@ -232,31 +228,7 @@ public class ViewEventUI extends Application {
     }
 
     private Image loadImage(String imageLocation) {
-        if (imageLocation == null || imageLocation.isBlank()) {
-            return null;
-        }
-
-        try {
-            String imageUrl;
-            if (imageLocation.startsWith("/")) {
-                URL resource = getClass().getResource(imageLocation);
-                if (resource == null) {
-                    return null;
-                }
-                imageUrl = resource.toExternalForm();
-            } else {
-                Path imagePath = Path.of(imageLocation);
-                if (!Files.isRegularFile(imagePath)) {
-                    return null;
-                }
-                imageUrl = imagePath.toUri().toString();
-            }
-
-            Image image = new Image(imageUrl);
-            return image.isError() ? null : image;
-        } catch (IllegalArgumentException exception) {
-            return null;
-        }
+        return EventImageLoader.load(imageLocation);
     }
 
     private String createMapHtml(double latitude, double longitude, String location) {
