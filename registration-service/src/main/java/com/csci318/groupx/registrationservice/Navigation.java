@@ -181,8 +181,8 @@ final class Navigation
 
                         // 2. THE SHOULDERS: Shifted closer up to the head for a tighter gap
                         "M 4,21 " +                       // Start at the bottom-left corner
-                        "C 4,16.5 7.5,12.2 12,12.2 " +    // Smooth curve up to the heightened crest of the chest
-                        "C 16.5,12.2 20,16.5 20,21 " +    // Smooth curve down to the bottom-right corner
+                        "C 4,16.5 7.5,12 12,12 " +    // Smooth curve up to the heightened crest of the chest
+                        "C 16.5,12 20,16.5 20,21 " +    // Smooth curve down to the bottom-right corner
                         "Z"                               // Close the shoulder baseline flat across the bottom
         );
 

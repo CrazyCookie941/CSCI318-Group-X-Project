@@ -19,7 +19,7 @@ import javafx.stage.Stage;
 
 import java.util.concurrent.CompletableFuture;
 
-// Displays a clean, flat settings view using functional CheckBoxes instead of nested accordion dropdowns
+// Displays a clean, flat settings view using functional CheckBoxes instead of nested accordion dropdowns .
 public class SettingsUI extends Application
 {
 
