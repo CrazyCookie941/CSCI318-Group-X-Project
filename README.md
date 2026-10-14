@@ -30,8 +30,9 @@ The system follows a microservice-based, event-driven architecture using Spring 
 |---|---:|
 | Event Service | 8081 |
 | Registration Service | 8082 |
-| Payment Service | 8083 |
+| Account Service | 8083 |
 | Notification Service | 8084 |
+| Payment Service | 8085 |
 
 ## Project Structure
 
