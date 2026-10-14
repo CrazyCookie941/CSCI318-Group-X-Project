@@ -373,7 +373,7 @@ public class TransactionUI extends Application {
 
                             String detail =
                                     "Payment could not be completed. " +
-                                            "Check Payment Service (8084) " +
+                                            "Check Payment Service (8085) " +
                                             "and Event Service (8081).";
 
                             Throwable cause = error;
