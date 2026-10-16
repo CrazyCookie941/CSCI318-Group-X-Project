@@ -8,20 +8,18 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.util.concurrent.CompletableFuture;
 
-// Displays expandable account and application settings sections with a clean, unified aesthetic
+// Displays a clean, flat settings view using functional CheckBoxes instead of nested accordion dropdowns .
 public class SettingsUI extends Application
 {
 
@@ -30,7 +28,7 @@ public class SettingsUI extends Application
     {
         // 1. Root Layout Container
         BorderPane layout = new BorderPane();
-        layout.setStyle("-fx-background-color: #fafafa;"); // Modern light background matching other views
+        layout.setStyle("-fx-background-color: #fafafa;");
 
         // 2. Styled Top Navigation Bar
         HBox navigationBar = Navigation.createNavigationBar(stage);
@@ -44,28 +42,26 @@ public class SettingsUI extends Application
         Label title = new Label("Settings");
         title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #222222;");
 
-        // Vertical stack for the expandable layout card boxes
+        // Vertical stack for the flat layout card boxes
         VBox settingsContainer = new VBox(15);
         settingsContainer.setStyle("-fx-background-color: transparent;");
         settingsContainer.setMaxWidth(Double.MAX_VALUE);
         VBox.setVgrow(settingsContainer, Priority.ALWAYS);
 
-        // Load expandable sections cleanly without structural constraints
+        // Load flat sections cleanly with static contents displayed directly
         settingsContainer.getChildren().addAll(
-                createSettingsSection("Account details", "Update your name, email address, and account preferences."),
-                createSettingsSection("Financial information", "Manage payment methods, transactions, and billing information."),
-                createSettingsSection("Notifications", "Choose whether to receive event notifications and which area to follow.", createNotificationSettingsContent()),
-                createSettingsSection("Other", "View system version logs, documentation resources, and corporate terms.", createOtherSettingsContent())
+                createFlatSettingsSection("Notifications", "Choose whether to receive event notifications and which area to follow.",
+                        createNotificationSettingsContent())
         );
 
         content.getChildren().addAll(title, settingsContainer);
 
-        // 4. Scroll Wrapper Integration (Safeguards against window clipping)
+        // 4. Scroll Wrapper Integration
         ScrollPane scrollWrapper = new ScrollPane(content);
         scrollWrapper.setFitToWidth(true);
         scrollWrapper.setFitToHeight(true);
         scrollWrapper.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
-        scrollWrapper.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollWrapper.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scrollWrapper.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 
         BorderPane.setMargin(scrollWrapper, new Insets(0, 15, 0, 0));
@@ -73,21 +69,27 @@ public class SettingsUI extends Application
 
         // 5. Stage Initialization Settings
         stage.setTitle("Application Settings");
-        stage.setScene(new Scene(layout, 1366, 768)); // Matching design width geometry safely
+        stage.setScene(new Scene(layout, 1366, 768));
         stage.show();
     }
 
     private static VBox createNotificationSettingsContent()
     {
         CheckBox enabled = new CheckBox("Receive notifications");
+        enabled.setStyle("-fx-opacity: 1.0; -fx-text-fill: #222222;");
+
         TextField area = new TextField();
         area.setPromptText("Area or suburb to follow (for example, Sydney)");
+        area.setStyle("-fx-opacity: 1.0; -fx-text-fill: #222222;");
+
         area.setMaxWidth(420);
         Button save = new Button("Save notification settings");
+        Label desc = new Label("Notify me when a new event is posted in this area:");
+        desc.setStyle("-fx-opacity: 1.0; -fx-text-fill: #222222;");
         Label status = new Label();
         VBox controls = new VBox(10,
                 enabled,
-                new Label("Notify me when a new event is posted in this area:"),
+                desc,
                 area,
                 save,
                 status);
@@ -97,7 +99,6 @@ public class SettingsUI extends Application
             enabled.setDisable(true);
             area.setDisable(true);
             save.setDisable(true);
-            status.setText("Sign in to manage notification settings.");
             return controls;
         }
 
@@ -138,169 +139,45 @@ public class SettingsUI extends Application
         return controls;
     }
 
-    // Creates a consistently styled hyperlink navigation item matching prior designs
-    // Creates one clean modern expandable settings block using an ultra-reliable BorderPane card rule
-    private static VBox createSettingsSection(String sectionTitle, String detailsText)
+    // Generates a container card that explicitly displays its configuration options immediately
+    private static VBox createFlatSettingsSection(String sectionTitle, String detailsText, Node settingsContent)
     {
-        return createSettingsSection(sectionTitle, detailsText, createDetailsLabel(detailsText));
-    }
-
-    private static VBox createSettingsSection(String sectionTitle, String detailsText, Node detailsContent)
-    {
-        VBox componentBlock = new VBox(0); // Holds header row and details drawer directly together
+        VBox componentBlock = new VBox(0);
         componentBlock.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(componentBlock, Priority.ALWAYS);
 
-        // --- ROW CONTROLLER: BorderPane handles foolproof left-text right-arrow positioning ---
-        BorderPane rowHeaderCard = new BorderPane();
-        rowHeaderCard.setPadding(new Insets(16, 24, 16, 24));
-        rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.01), 4, 0, 0, 1);");
+        // Header Panel Container
+        VBox headerCard = new VBox(4);
+        headerCard.setPadding(new Insets(16, 24, 12, 24));
+        headerCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0 #e0e0e0 transparent #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6 6 0 0; -fx-background-radius: 6 6 0 0;");
 
-        // Section Title Label locked tightly into Left slot territory
         Label titleLabel = new Label(sectionTitle);
         titleLabel.setStyle("-fx-text-fill: #222222; -fx-font-size: 15px; -fx-font-weight: bold;");
-        HBox leftWrapper = new HBox(titleLabel);
-        leftWrapper.setAlignment(Pos.CENTER_LEFT);
-        rowHeaderCard.setLeft(leftWrapper);
 
-        // Dynamic Arrow Indicator locked tightly into Right slot territory
-        Label arrowIndicator = new Label("▼");
-        arrowIndicator.setStyle("-fx-text-fill: #777777; -fx-font-size: 13px; -fx-font-weight: bold;");
-        HBox rightWrapper = new HBox(arrowIndicator);
-        rightWrapper.setAlignment(Pos.CENTER_RIGHT);
-        rowHeaderCard.setRight(rightWrapper);
+        Label summaryLabel = new Label(detailsText);
+        summaryLabel.setWrapText(true);
+        summaryLabel.setStyle("-fx-text-fill: #666666; -fx-font-size: 13px;");
 
-        // --- DETAILS DRAWER PANEL ---
-        VBox drawerContent = new VBox(detailsContent);
-        drawerContent.setPadding(new Insets(15, 24, 18, 24));
-        drawerContent.setStyle("-fx-background-color: #f7f7f7; -fx-border-color: transparent #e0e0e0 #e0e0e0 #e0e0e0; -fx-border-width: 1; -fx-border-radius: 0 0 6 6; -fx-background-radius: 0 0 6 6;");
+        headerCard.getChildren().addAll(titleLabel, summaryLabel);
 
-        // Starts collapsed cleanly
-        boolean initiallyExpanded = "Other".equals(sectionTitle);
-        drawerContent.setVisible(initiallyExpanded);
-        drawerContent.setManaged(initiallyExpanded);
-        if (initiallyExpanded) {
-            arrowIndicator.setText("▲");
-            rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0 #e0e0e0 transparent #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6 6 0 0; -fx-background-radius: 6 6 0 0; -fx-cursor: hand;");
-        }
+        // Options Content Panel Box
+        VBox optionsDrawer = new VBox(settingsContent);
+        optionsDrawer.setPadding(new Insets(12, 24, 18, 24));
+        optionsDrawer.setStyle("-fx-background-color: #f7f7f7; -fx-border-color: transparent #e0e0e0 #e0e0e0 #e0e0e0; -fx-border-width: 1; -fx-border-radius: 0 0 6 6; -fx-background-radius: 0 0 6 6;");
 
-        // --- INTERACTIVE ACTIONS AND ANIMATION TRIGGERS ---
-        // Highlight row header when hovering over the card container area
-        rowHeaderCard.setOnMouseEntered(e -> rowHeaderCard.setStyle("-fx-background-color: #fcfcfc; -fx-border-color: #cccccc; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;"));
-        rowHeaderCard.setOnMouseExited(e -> {
-            if (drawerContent.isVisible()) {
-                // Keep bottom card borders flat if open to link with the expanded panel cleanly
-                rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0 #e0e0e0 transparent #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6 6 0 0; -fx-background-radius: 6 6 0 0; -fx-cursor: hand;");
-            } else {
-                rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;");
-            }
-        });
-
-        // Click interaction fires expansion state updates safely
-        rowHeaderCard.setOnMouseClicked(event -> {
-            boolean isExpanded = drawerContent.isVisible();
-            drawerContent.setVisible(!isExpanded);
-            drawerContent.setManaged(!isExpanded);
-            arrowIndicator.setText(isExpanded ? "▼" : "▲");
-
-            // Adjust card corner curves instantly depending on drawer layout states
-            if (!isExpanded) {
-                rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0 #e0e0e0 transparent #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6 6 0 0; -fx-background-radius: 6 6 0 0; -fx-cursor: hand;");
-            } else {
-                rowHeaderCard.setStyle("-fx-background-color: #ffffff; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;");
-            }
-        });
-
-        componentBlock.getChildren().addAll(rowHeaderCard, drawerContent);
+        componentBlock.getChildren().addAll(headerCard, optionsDrawer);
         return componentBlock;
     }
 
-    private static VBox createOtherSettingsContent()
+    // Helper utility to turn string properties into checkbox nodes instantly
+    private static VBox createCheckboxGroup(String... options)
     {
-        VBox otherSettingsContainer = new VBox(12);
-        otherSettingsContainer.setFillWidth(true);
-        otherSettingsContainer.getChildren().addAll(
-                createNestedSettingsSection("Accessibility settings", "Adjust contrast, captioning, zoom, and reader support.",
-                        "High contrast mode", "Text scaling", "Captioning options", "Screen reader hints"),
-                createNestedSettingsSection("System & display settings", "Change display defaults, appearance, and platform behaviour.",
-                        "Theme preferences", "Display resolution", "Language & region", "Window behaviour"),
-                createNestedSettingsSection("Extra features / toggleable settings", "Control optional tools and feature switches for a custom experience.",
-                        "Quick actions", "Experimental widgets", "Advanced notifications", "Power-user shortcuts")
-        );
-        return otherSettingsContainer;
-    }
-
-    private static VBox createNestedSettingsSection(String sectionTitle, String summaryText, String... settingOptions)
-    {
-        VBox nestedSection = new VBox(0);
-        nestedSection.setMaxWidth(Double.MAX_VALUE);
-
-        BorderPane nestedHeader = new BorderPane();
-        nestedHeader.setPadding(new Insets(12, 18, 12, 18));
-        nestedHeader.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dcdcdc; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;");
-
-        Label nestedTitle = new Label(sectionTitle);
-        nestedTitle.setStyle("-fx-text-fill: #222222; -fx-font-size: 14px; -fx-font-weight: bold;");
-        HBox nestedTitleBox = new HBox(nestedTitle);
-        nestedTitleBox.setAlignment(Pos.CENTER_LEFT);
-        nestedHeader.setLeft(nestedTitleBox);
-
-        Label nestedArrow = new Label("▼");
-        nestedArrow.setStyle("-fx-text-fill: #777777; -fx-font-size: 12px; -fx-font-weight: bold;");
-        HBox nestedArrowBox = new HBox(nestedArrow);
-        nestedArrowBox.setAlignment(Pos.CENTER_RIGHT);
-        nestedHeader.setRight(nestedArrowBox);
-
-        VBox nestedDrawer = new VBox(8);
-        nestedDrawer.setPadding(new Insets(12, 18, 14, 18));
-        nestedDrawer.setStyle("-fx-background-color: #f3f3f3; -fx-border-color: transparent #dcdcdc #dcdcdc #dcdcdc; -fx-border-width: 1; -fx-border-radius: 0 0 6 6; -fx-background-radius: 0 0 6 6;");
-        nestedDrawer.setVisible(false);
-        nestedDrawer.setManaged(false);
-
-        Label summary = createDetailsLabel(summaryText);
-        nestedDrawer.getChildren().add(summary);
-
-        for (String option : settingOptions)
-        {
-            Label feature = new Label("• " + option);
-            feature.setWrapText(true);
-            feature.setStyle("-fx-text-fill: #555555; -fx-font-size: 13px;");
-            nestedDrawer.getChildren().add(feature);
+        VBox container = new VBox(10);
+        for (String option : options) {
+            CheckBox cb = new CheckBox(option);
+            cb.setStyle("-fx-text-fill: #444444; -fx-font-size: 14px;");
+            container.getChildren().add(cb);
         }
-
-        nestedHeader.setOnMouseEntered(e -> nestedHeader.setStyle("-fx-background-color: #fdfdfd; -fx-border-color: #cfcfcf; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;"));
-        nestedHeader.setOnMouseExited(e -> {
-            if (nestedDrawer.isVisible()) {
-                nestedHeader.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dcdcdc #dcdcdc transparent #dcdcdc; -fx-border-width: 1; -fx-border-radius: 6 6 0 0; -fx-background-radius: 6 6 0 0; -fx-cursor: hand;");
-            } else {
-                nestedHeader.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dcdcdc; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;");
-            }
-        });
-
-        nestedHeader.setOnMouseClicked(event -> {
-            boolean expanded = nestedDrawer.isVisible();
-            nestedDrawer.setVisible(!expanded);
-            nestedDrawer.setManaged(!expanded);
-            nestedArrow.setText(expanded ? "▼" : "▲");
-
-            if (!expanded) {
-                nestedHeader.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dcdcdc #dcdcdc transparent #dcdcdc; -fx-border-width: 1; -fx-border-radius: 6 6 0 0; -fx-background-radius: 6 6 0 0; -fx-cursor: hand;");
-            } else {
-                nestedHeader.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dcdcdc; -fx-border-width: 1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-cursor: hand;");
-            }
-        });
-
-        nestedSection.getChildren().addAll(nestedHeader, nestedDrawer);
-        return nestedSection;
-    }
-
-    private static Label createDetailsLabel(String detailsText)
-    {
-        Label detailsLabel = new Label(detailsText);
-        detailsLabel.setWrapText(true);
-        detailsLabel.setMaxWidth(Double.MAX_VALUE);
-        detailsLabel.setStyle("-fx-text-fill: #555555; -fx-font-size: 14px; -fx-line-spacing: 3;");
-        return detailsLabel;
+        return container;
     }
 
     public static void main(String[] args) { launch(args); }

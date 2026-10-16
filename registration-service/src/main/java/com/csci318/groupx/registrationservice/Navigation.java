@@ -175,27 +175,28 @@ final class Navigation
         return button;
     }
 
-    private static StackPane createProfileIcon()
+    private static SVGPath createProfileIcon()
     {
-        Circle head = new Circle(4, Color.WHITE);
-        head.setTranslateY(-5);
+        SVGPath icon = new SVGPath();
 
-        SVGPath shoulders = new SVGPath();
+        // Both shapes are drawn inside a single coordinate system to lock horizontal alignment
+        icon.setContent(
+                // 1. THE HEAD: A perfectly centered, seamless circle at the top
+                "M 12,2 " +                       // Start at the top center of the head
+                        "a 4.5,4.5 0 1,0 0.1,0 " +         // Draw a complete smooth circle with radius 4.5
+                        "Z " +                            // Close the head shape
 
-        shoulders.setContent(
-                "M 3 22 C 3 15, 21 15, 21 22 Z"
+                        // 2. THE SHOULDERS: Shifted closer up to the head for a tighter gap
+                        "M 4,21 " +                       // Start at the bottom-left corner
+                        "C 4,16.5 7.5,12 12,12 " +    // Smooth curve up to the heightened crest of the chest
+                        "C 16.5,12 20,16.5 20,21 " +    // Smooth curve down to the bottom-right corner
+                        "Z"                               // Close the shoulder baseline flat across the bottom
         );
 
-        shoulders.setFill(Color.WHITE);
+        icon.setFill(Color.WHITE);
 
-        StackPane icon = new StackPane(
-                shoulders,
-                head
-        );
-
-        icon.setMinSize(24, 24);
-        icon.setPrefSize(24, 24);
-        icon.setMaxSize(24, 24);
+        // Apply strict scaling layout constraints to match your navigation panel properties
+        icon.setStyle("-fx-min-width: 24; -fx-min-height: 24; -fx-pref-width: 24; -fx-pref-height: 24; -fx-max-width: 24; -fx-max-height: 24;");
 
         return icon;
     }
