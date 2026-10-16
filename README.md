@@ -64,3 +64,7 @@ Location searches are submitted only when the manager presses **Find location**.
 The JavaFX notification bell loads persisted notifications from notification-service (port 8084), displays the unread count, and supports marking individual notifications read before clearing them. The Notifications section in Settings controls notifications and the area followed for new event announcements. Area matching is case-insensitive substring matching against the event's location text.
 
 Creating an event notifies users who enabled notifications and set a matching area. Event managers can change an event's status to **POSTPONED**, **CANCELLED**, or **REFUNDED** from Manage Events; registered attendees receive a notification when one of these statuses is applied. Deleting an event also sends a cancellation notification before its registrations are removed. Keep event-service, notification-service, and the JavaFX registration application running together for notification delivery. Notifications are persisted in the notification-service H2 database.
+
+## AI event assistant
+
+Open **AI assistant** from the JavaFX navigation bar, or **Ask the AI assistant** on the welcome page, to ask questions about listed events. The assistant sends requests to event-service on port 8081; start that service and configure the `GROQ_API_KEY` environment variable before chatting. The chat screen carries recent turns into follow-up requests while staying within the backend's 2,000-character request limit.

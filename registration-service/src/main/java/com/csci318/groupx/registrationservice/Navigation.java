@@ -88,6 +88,12 @@ final class Navigation
                         new DashboardUI().start(nextStage))
         );
 
+        Hyperlink assistantLink = createNavigationLink("AI assistant");
+        assistantLink.setOnAction(event ->
+                goTo(stage, nextStage ->
+                        new ChatbotUI().start(nextStage))
+        );
+
         Hyperlink eventsLink = createNavigationLink("My events");
         eventsLink.setOnAction(event ->
                 goTo(stage, nextStage -> {
@@ -139,6 +145,7 @@ final class Navigation
 
         navigationBar.getChildren().addAll(
                 homeLink,
+                assistantLink,
                 eventsLink,
                 spacer,
                 notificationButton,

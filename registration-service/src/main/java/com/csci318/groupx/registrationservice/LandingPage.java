@@ -61,7 +61,12 @@ public class LandingPage extends javafx.application.Application
         loginButton.setOnAction(event ->
                 Navigation.goTo(stage, nextStage -> new LoginUI().start(nextStage)));
 
-        HBox actions = new HBox(16, signUpButton, loginButton);
+        Button assistantButton = new Button("Ask the AI assistant");
+        assistantButton.setStyle(SECONDARY_BUTTON_STYLE);
+        assistantButton.setOnAction(event ->
+                Navigation.goTo(stage, nextStage -> new ChatbotUI().start(nextStage)));
+
+        HBox actions = new HBox(16, signUpButton, loginButton, assistantButton);
         actions.setAlignment(Pos.CENTER);
         hero.getChildren().addAll(title, subtitle, actions);
 
