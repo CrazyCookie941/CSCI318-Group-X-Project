@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -31,5 +33,12 @@ public class PaymentController {
             @PathVariable Long paymentId
     ) {
         return paymentService.getById(paymentId);
+    }
+
+    @GetMapping
+    public List<PaymentResponse> getByAccountId(
+            @RequestParam Long accountId
+    ) {
+        return paymentService.getByAccountId(accountId);
     }
 }

@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Locale;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -128,5 +129,19 @@ public class PaymentService {
                         HttpStatus.NOT_FOUND,
                         "Payment not found."
                 ));
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentResponse> getByAccountId(Long accountId) {
+        if (accountId == null || accountId <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "A valid accountId is required."
+            );
+        }
+        return repository.findByAccountIdOrderByCreatedAtDesc(accountId)
+                .stream()
+                .map(PaymentResponse::from)
+                .toList();
     }
 }

@@ -53,6 +53,7 @@ final class Navigation
         }
 
         screen.accept(stage);
+        AppPreferences.applyDisplaySettings(stage.getScene());
     }
 
     static void goBack(Stage stage)
@@ -67,6 +68,7 @@ final class Navigation
         stage.setScene(previousScreen.scene());
         stage.setTitle(previousScreen.title());
         stage.setResizable(previousScreen.resizable());
+        AppPreferences.applyDisplaySettings(stage.getScene());
 
         if (screens.isEmpty())
         {
@@ -118,6 +120,10 @@ final class Navigation
                         "-fx-font-size: 10px; -fx-font-weight: bold; " +
                         "-fx-background-radius: 10; -fx-padding: 1 4;"
         );
+        if (!AppPreferences.showUnreadBadge()) {
+            unreadBadge.setVisible(false);
+            unreadBadge.setManaged(false);
+        }
         StackPane notificationGraphic = new StackPane(createNotificationIcon(), unreadBadge);
         notificationGraphic.setMinSize(30, 30);
         notificationGraphic.setPrefSize(30, 30);
@@ -143,14 +149,12 @@ final class Navigation
                 showProfilePopup(profileButton, stage)
         );
 
+        navigationBar.getChildren().addAll(homeLink);
+        if (AppPreferences.showAssistantShortcut()) {
+            navigationBar.getChildren().add(assistantLink);
+        }
         navigationBar.getChildren().addAll(
-                homeLink,
-                assistantLink,
-                eventsLink,
-                spacer,
-                notificationButton,
-                profileButton
-        );
+                eventsLink, spacer, notificationButton, profileButton);
 
         return navigationBar;
     }
@@ -410,6 +414,11 @@ final class Navigation
 
     private static void refreshUnreadBadge(Label unreadBadge)
     {
+        if (!AppPreferences.showUnreadBadge()) {
+            unreadBadge.setVisible(false);
+            unreadBadge.setManaged(false);
+            return;
+        }
         Long accountId = CurrentUserSession.getAccountId();
         if (accountId == null) {
             unreadBadge.setVisible(false);

@@ -93,7 +93,11 @@ public class TransactionUI extends Application {
         RadioButton paypal =
                 providerButton("PayPal", paymentGroup);
 
-        visa.setSelected(true);
+        switch (AppPreferences.preferredPaymentProvider(CurrentUserSession.getAccountId())) {
+            case "MASTERCARD" -> mastercard.setSelected(true);
+            case "PAYPAL" -> paypal.setSelected(true);
+            default -> visa.setSelected(true);
+        }
 
         HBox providers = new HBox(
                 18,

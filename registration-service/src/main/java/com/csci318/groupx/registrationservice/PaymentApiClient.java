@@ -1,11 +1,13 @@
 package com.csci318.groupx.registrationservice;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 final class PaymentApiClient {
@@ -70,5 +72,15 @@ final class PaymentApiClient {
                         .retrieve()
                         .body(PaymentResponse.class)
         );
+    }
+
+    static CompletableFuture<List<PaymentResponse>> history(long accountId) {
+        return CompletableFuture.supplyAsync(() -> CLIENT.get()
+                .uri(uriBuilder -> uriBuilder.path("/api/payments")
+                        .queryParam("accountId", accountId)
+                        .build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {
+                }));
     }
 }
