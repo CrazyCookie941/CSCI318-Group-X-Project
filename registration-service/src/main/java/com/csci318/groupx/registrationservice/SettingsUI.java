@@ -17,6 +17,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.math.RoundingMode;
@@ -191,7 +192,7 @@ public class SettingsUI extends Application
         Button saveProvider = new Button("Save default provider");
         Label status = blackLabel("");
         Label historyTitle = blackLabel("Payment and admission history");
-        historyTitle.setStyle("-fx-font-weight: bold;");
+        historyTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #000000;");
         VBox history = new VBox(8);
         VBox controls = new VBox(10, note, blackLabel("Default checkout provider:"), provider,
                 saveProvider, status, historyTitle, history);
