@@ -74,6 +74,15 @@ public class PaymentRecord {
         this.createdAt = createdAt;
     }
 
+    /** Mark a simulated successful payment as refunded without deleting its audit record. */
+    public void markRefunded() {
+        if (status != PaymentStatus.SUCCEEDED) {
+            throw new IllegalStateException("Only successful payments can be refunded.");
+        }
+        status = PaymentStatus.REFUNDED;
+        successfulPaymentKey = null; // Release the unique key for this account/event.
+    }
+
     public void setSuccessfulPaymentKey(String successfulPaymentKey) {
         this.successfulPaymentKey = successfulPaymentKey;
     }

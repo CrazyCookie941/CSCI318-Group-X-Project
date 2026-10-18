@@ -143,7 +143,8 @@ public class NotificationController {
                         NotificationPreference::getAccountId,
                         NotificationPreference::isEnabled));
         List<NotificationRecord> notifications = accountIds.stream()
-                .filter(accountId -> preferences.getOrDefault(accountId, true))
+                .filter(accountId -> "Event cancelled".equalsIgnoreCase(eventChange.title())
+                        || preferences.getOrDefault(accountId, true))
                 .map(accountId -> new NotificationRecord(
                         accountId, eventChange.eventId(), eventChange.title(), eventChange.message()))
                 .toList();

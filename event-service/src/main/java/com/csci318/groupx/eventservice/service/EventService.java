@@ -5,6 +5,7 @@ import com.csci318.groupx.eventservice.infrastructure.repository.EventRepository
 import com.csci318.groupx.eventservice.presentation.dto.EventScoreResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
@@ -57,11 +58,16 @@ public class EventService {
                     existingEvent.setEndDateTime(updatedEvent.getEndDateTime());
                     existingEvent.setPrice(updatedEvent.getPrice());
                     existingEvent.setCapacity(updatedEvent.getCapacity());
-                    existingEvent.setRegisteredCount(updatedEvent.getRegisteredCount());
+                    // registeredCount is managed by registration transactions, not event edits.
                     existingEvent.setOwnerId(updatedEvent.getOwnerId());
                     existingEvent.setImageLocation(updatedEvent.getImageLocation());
                     existingEvent.setLatitude(updatedEvent.getLatitude());
                     existingEvent.setLongitude(updatedEvent.getLongitude());
+                    if ("CANCELLED".equalsIgnoreCase(existingEvent.getStatus())
+                            && !"CANCELLED".equalsIgnoreCase(updatedEvent.getStatus())) {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT,
+                                "Cancelled events cannot be reopened.");
+                    }
                     if (updatedEvent.getStatus() != null && !updatedEvent.getStatus().isBlank()) {
                         existingEvent.setStatus(updatedEvent.getStatus());
                     }
@@ -71,6 +77,21 @@ public class EventService {
                 .orElseThrow(() -> new RuntimeException("Event not found"));
     }
 
+    @Transactional
+    public Event markCancelled(Long id) {
+        Event event = eventRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found."));
+        event.setStatus("CANCELLED");
+        return eventRepository.saveAndFlush(event);
+    }
+
+    @Transactional
+    public void clearRegisteredCount(Long id) {
+        eventRepository.findByIdForUpdate(id).ifPresent(event -> {
+            event.setRegisteredCount(0);
+            eventRepository.save(event);
+        });
+    }
     private static void validatePrice(Double price) {
         if (price == null || !Double.isFinite(price) || price < 0 || price > 999999.99) {
             throw new ResponseStatusException(

@@ -1,3 +1,4 @@
+
 package com.csci318.groupx.paymentservice.service;
 
 import com.csci318.groupx.paymentservice.api.PaymentRequest;
@@ -35,30 +36,53 @@ class PaymentIdempotencyTest {
     @Test
     void concurrentSuccessfulRetriesCreateOnlyOnePayment() throws Exception {
         when(eventCatalog.requireEvent(55L)).thenReturn(
-                new EventCatalogClient.EventSnapshot(55L, "Concurrency test", new BigDecimal("25.00")));
+                new EventCatalogClient.EventSnapshot(
+                        55L,
+                        "Concurrency test",
+                        new BigDecimal("25.00"),
+                        "SCHEDULED",
+                        100,
+                        0
+                )
+        );
 
         int requestCount = 20;
         CountDownLatch ready = new CountDownLatch(requestCount);
         CountDownLatch start = new CountDownLatch(1);
-        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(requestCount)) {
+
+        try (var executor =
+                     java.util.concurrent.Executors.newFixedThreadPool(requestCount)) {
+
             var attempts = java.util.stream.IntStream.range(0, requestCount)
                     .mapToObj(index -> executor.submit(() -> {
                         ready.countDown();
                         start.await();
+
                         return paymentService.simulate(
-                                new PaymentRequest(55L, 700L, "VISA", false));
+                                new PaymentRequest(55L, 700L, "VISA", false)
+                        );
                     }))
                     .toList();
 
             assertTrue(ready.await(10, TimeUnit.SECONDS));
             start.countDown();
+
             Set<Long> paymentIds = new java.util.HashSet<>();
+
             for (var attempt : attempts) {
-                paymentIds.add(attempt.get(20, TimeUnit.SECONDS).paymentId());
+                paymentIds.add(
+                        attempt.get(20, TimeUnit.SECONDS).paymentId()
+                );
             }
 
             assertEquals(1, paymentIds.size());
-            assertEquals(1, paymentRepository.findByAccountIdOrderByCreatedAtDesc(700L).size());
+
+            assertEquals(
+                    1,
+                    paymentRepository
+                            .findByAccountIdOrderByCreatedAtDesc(700L)
+                            .size()
+            );
         }
     }
 }

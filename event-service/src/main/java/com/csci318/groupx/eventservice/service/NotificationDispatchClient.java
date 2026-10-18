@@ -56,6 +56,32 @@ public class NotificationDispatchClient {
         }
     }
 
+    /** Required notification for cancellation: unlike eventChanged(), failures are surfaced. */
+    public void eventCancelledRequired(Event event, List<Long> accountIds) {
+        List<Long> uniqueRecipients = accountIds.stream()
+                .filter(id -> id != null && id > 0).distinct().toList();
+        if (uniqueRecipients.isEmpty()) {
+            return;
+        }
+        try {
+            Integer created = CLIENT.post()
+                    .uri("/api/notifications/events/changed")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new EventChangeRequest(event.getId(), "Event cancelled",
+                            event.getName() + " has been cancelled.", uniqueRecipients))
+                    .retrieve().body(Integer.class);
+            if (created == null || created < uniqueRecipients.size()) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                        "Not all registered users received cancellation notifications.");
+            }
+        } catch (org.springframework.web.client.RestClientException ex) {
+            logger.error("Cancellation notification dispatch failed for eventId={}", event.getId(), ex);
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                    "Cancellation notifications could not be saved; retry the cancellation.", ex);
+        }
+    }
     private record NewEventRequest(Long eventId, String title, String location) {
     }
 
