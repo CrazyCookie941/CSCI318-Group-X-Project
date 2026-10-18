@@ -221,10 +221,10 @@ public class MyListingsEventManager extends Application
         TextField location = new TextField(listing.location());
         TextField price = new TextField(listing.price());
         TextField size = new TextField(listing.size());
-        ComboBox<String> status = new ComboBox<>();
-        status.getItems().addAll("SCHEDULED", "POSTPONED", "CANCELLED", "REFUNDED");
-        status.setValue(listing.status() == null ? "SCHEDULED" : listing.status());
-        status.setMaxWidth(Double.MAX_VALUE);
+        //ComboBox<String> status = new ComboBox<>();
+        //status.getItems().addAll("SCHEDULED", "POSTPONED", "CANCELLED", "REFUNDED");
+        //status.setValue(listing.status() == null ? "SCHEDULED" : listing.status());
+        //status.setMaxWidth(Double.MAX_VALUE);
         TextArea description = new TextArea(listing.description());
         description.setPrefRowCount(4);
         description.setWrapText(true);
@@ -238,7 +238,7 @@ public class MyListingsEventManager extends Application
         fields.addRow(3, new Label("Price:"), price);
         fields.addRow(4, new Label("Capacity:"), size);
         fields.addRow(5, new Label("Description:"), description);
-        fields.addRow(6, new Label("Event status:"), status);
+        //fields.addRow(6, new Label("Event status:"), status);
         dialog.getDialogPane().setContent(fields);
 
         if (dialog.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
@@ -264,8 +264,8 @@ public class MyListingsEventManager extends Application
                     listing.imageLocation(),
                     listing.ownerId(),
                     listing.latitude(),
-                    listing.longitude(),
-                    status.getValue()
+                    listing.longitude()
+                    //status.getValue()
             ));
             showMessage("Event updated", "\"" + updated.title() + "\" has been saved.");
             return updated;

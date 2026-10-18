@@ -208,6 +208,8 @@ public class AccountUI extends Application
         );
 
         // Two-factor authentication
+        /*
+
         Label lblTwoFactor =
                 new Label("2FA:");
 
@@ -240,6 +242,9 @@ public class AccountUI extends Application
                 1,
                 4
         );
+
+
+         */
 
         // Delete Account section
         Label lblDeleteAccount =
