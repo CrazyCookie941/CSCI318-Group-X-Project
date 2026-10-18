@@ -275,7 +275,7 @@ public class CreateEventUI extends Application
         paymentSummary.setPadding(new Insets(12));
         paymentSummary.setStyle("-fx-background-color: #ffffff; -fx-border-color: #d0d0d0; -fx-border-radius: 6; -fx-background-radius: 6;");
 
-        Label lblPaymentSummaryTitle = new Label("Payment preferences");
+        Label lblPaymentSummaryTitle = new Label("Require Deposit");
         lblPaymentSummaryTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #555555;");
         CheckBox chkRequiresDeposit = new CheckBox("Require a deposit for registration");
         chkRequiresDeposit.setSelected(false);
