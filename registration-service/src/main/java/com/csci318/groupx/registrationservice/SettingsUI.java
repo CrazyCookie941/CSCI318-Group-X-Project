@@ -61,7 +61,7 @@ public class SettingsUI extends Application
                 createSettingsSection("Account details", createAccountSettingsContent()),
                 createSettingsSection("Financial information", createFinancialSettingsContent()),
                 createSettingsSection("Notifications", createNotificationSettingsContent()),
-                createSettingsSection("Other", createOtherSettingsContent(stage))
+                createSettingsSection("Other", createOtherSettingsContent())
         );
 
         content.getChildren().addAll(title, settingsContainer);
@@ -373,7 +373,7 @@ public class SettingsUI extends Application
         return componentBlock;
     }
 
-    private static VBox createOtherSettingsContent(Stage stage)
+    private static VBox createOtherSettingsContent()
     {
         VBox otherSettingsContainer = new VBox(12);
         otherSettingsContainer.setFillWidth(true);
@@ -381,7 +381,7 @@ public class SettingsUI extends Application
                 createNestedSettingsSection("Accessibility settings",
                         createAccessibilitySettingsContent()),
                 createNestedSettingsSection("System & display settings",
-                        createDisplaySettingsContent(stage)),
+                        createDisplaySettingsContent()),
                 createNestedSettingsSection("Extra features / toggleable settings",
                         createFeatureSettingsContent())
         );
@@ -455,7 +455,7 @@ public class SettingsUI extends Application
         };
     }
 
-    private static VBox createDisplaySettingsContent(Stage stage) {
+    private static VBox createDisplaySettingsContent() {
         ComboBox<String> theme = new ComboBox<>();
         theme.getItems().addAll("Light", "Dark");
         theme.setValue(AppPreferences.theme());
@@ -467,13 +467,7 @@ public class SettingsUI extends Application
             }
         });
 
-        CheckBox resizable = blackCheckBox("Allow window resizing");
-        resizable.setSelected(AppPreferences.resizable());
-        resizable.setOnAction(event -> {
-            stage.setResizable(resizable.isSelected());
-            AppPreferences.setResizable(resizable.isSelected());
-        });
-        return new VBox(10, new HBox(10, blackLabel("Appearance:"), theme), resizable);
+        return new VBox(10, new HBox(10, blackLabel("Appearance:"), theme));
     }
 
     private static VBox createFeatureSettingsContent() {
