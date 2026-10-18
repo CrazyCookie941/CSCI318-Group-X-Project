@@ -72,14 +72,6 @@ final class AppPreferences {
         PREFERENCES.putBoolean("features.unreadBadge", enabled);
     }
 
-    static boolean resizable() {
-        return PREFERENCES.getBoolean("display.resizable", true);
-    }
-
-    static void setResizable(boolean enabled) {
-        PREFERENCES.putBoolean("display.resizable", enabled);
-    }
-
     static String preferredPaymentProvider(Long accountId) {
         return accountPreferences(accountId).get("payment.provider", "VISA");
     }
@@ -92,10 +84,9 @@ final class AppPreferences {
         if (scene == null) {
             return;
         }
-        if (scene.getWindow() instanceof javafx.stage.Stage stage) {
-            stage.setResizable(resizable());
-        }
         applyDisplaySettings(scene.getRoot());
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
     }
 
     private static void applyDisplaySettings(Node node) {
