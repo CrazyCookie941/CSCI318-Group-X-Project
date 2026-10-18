@@ -250,14 +250,6 @@ public class AccountUI extends Application
          */
 
         // Delete Account section
-        Label lblDeleteAccount =
-                new Label("Delete account:");
-
-        lblDeleteAccount.setStyle(
-                "-fx-font-size: 14px; " +
-                        "-fx-text-fill: #666666; " +
-                        "-fx-font-weight: bold;"
-        );
 
         Button btnDeleteAccount =
                 new Button("Delete my account");
@@ -267,7 +259,7 @@ public class AccountUI extends Application
                         "-fx-text-fill: #b00020; " +
                         "-fx-border-color: #d98d8d; " +
                         "-fx-border-radius: 4; " +
-                        "-fx-padding: 8 14 8 14; " +
+                        "-fx-padding: 10 24 10 24; " +
                         "-fx-font-weight: bold; " +
                         "-fx-cursor: hand;"
         );
@@ -276,17 +268,6 @@ public class AccountUI extends Application
                 deleteCurrentAccount(stage, accountId, btnDeleteAccount)
         );
 
-        profileGrid.add(
-                lblDeleteAccount,
-                0,
-                5
-        );
-
-        profileGrid.add(
-                btnDeleteAccount,
-                1,
-                5
-        );
 
         // Footer Action Buttons
         HBox actionButtons = new HBox(15);
@@ -516,7 +497,8 @@ public class AccountUI extends Application
 
         actionButtons.getChildren().addAll(
                 btnSave,
-                btnCancel
+                btnCancel,
+                btnDeleteAccount
         );
 
         leftColumn.getChildren().addAll(
@@ -747,6 +729,7 @@ public class AccountUI extends Application
             showAlert(Alert.AlertType.WARNING, "Please sign in again.");
             return;
         }
+
 
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("Delete account");
