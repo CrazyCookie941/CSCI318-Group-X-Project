@@ -88,8 +88,9 @@ public class MyListingsEventGoer extends Application
         layout.setCenter(scrollWrapper);
 
         // 5. Stage Initialization Settings
-        stage.setTitle("Event Admissions Workspace");
+        stage.setTitle("EventRunner AI Event Management Platform");
         stage.setScene(new Scene(layout, 1366, 768));
+        stage.setResizable(false);
         stage.show();
     }
 

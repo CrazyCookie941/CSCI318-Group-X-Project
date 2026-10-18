@@ -600,15 +600,9 @@ public class AccountUI extends Application
 
         layout.setCenter(mainContent);
 
-        stage.setTitle("Account profile");
+        stage.setTitle("EventRunner AI Event Management Platform");
 
-        stage.setScene(
-                new Scene(
-                        layout,
-                        920,
-                        520
-                )
-        );
+        stage.setScene(new Scene(layout,1366, 768));
 
         stage.setResizable(false);
         stage.show();

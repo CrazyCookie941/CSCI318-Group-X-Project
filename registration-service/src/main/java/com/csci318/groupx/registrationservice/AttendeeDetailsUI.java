@@ -155,7 +155,7 @@ public class AttendeeDetailsUI extends Application
         layout.setCenter(scrollWrapper);
 
         // 5. Stage Initialization Setup
-        stage.setTitle("Event Admission Details Form");
+        stage.setTitle("EventRunner AI Event Management Platform");
         stage.setScene(new Scene(layout, 1366, 768));
         stage.setResizable(false);
         stage.show();

@@ -290,7 +290,7 @@ public class CreateEventUI extends Application
         root.setCenter(formScrollPane);
 
         Scene scene = new Scene(root, 1366, 768);
-        primaryStage.setTitle("Event Management Workspace");
+        primaryStage.setTitle("EventRunner AI Event Management Platform");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
         primaryStage.show();

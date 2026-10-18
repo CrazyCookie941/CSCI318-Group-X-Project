@@ -78,9 +78,10 @@ public class SettingsUI extends Application
         layout.setCenter(scrollWrapper);
 
         // 5. Stage Initialization Settings
-        stage.setTitle("Application Settings");
+        stage.setTitle("EventRunner AI Event Management Platform");
         Scene scene = new Scene(layout, 1366, 768);
         stage.setScene(scene);
+        stage.setResizable(false);
         stage.show();
         AppPreferences.applyDisplaySettings(stage.getScene());
     }

@@ -162,7 +162,7 @@ public class SignUpUI extends Application {
         );
 
         rootLayout.getChildren().add(cardContainer);
-        stage.setTitle("Create Account");
+        stage.setTitle("EventRunner AI Event Management Platform");
         stage.setScene(new Scene(rootLayout, 1366, 768));
         stage.setResizable(false);
         stage.show();

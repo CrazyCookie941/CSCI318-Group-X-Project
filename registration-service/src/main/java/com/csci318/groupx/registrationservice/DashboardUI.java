@@ -369,12 +369,11 @@ public class DashboardUI extends Application
         rootLayout.setCenter(scrollWrapper);
 
         // Stage Setup and Launch Sizing
-        stage.setTitle("Event Discovery Dashboard");
+        stage.setTitle("EventRunner AI Event Management Platform");
 
         Scene scene = new Scene(rootLayout, 1366, 768);
         stage.setScene(scene);
-        stage.setMinWidth(750);
-        stage.setMinHeight(480);
+        stage.setResizable(false);
         stage.show();
     }
 

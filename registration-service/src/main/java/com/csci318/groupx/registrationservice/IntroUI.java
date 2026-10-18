@@ -71,8 +71,9 @@ public class IntroUI extends Application {
 
         // 4. Scene Presentation
         Scene scene = new Scene(root, 1366, 768);
-        primaryStage.setTitle("Welcome to EventGuide AI Platform");
+        primaryStage.setTitle("EventRunner AI Event Management Platform");
         primaryStage.setScene(scene);
+        primaryStage.setResizable(false);
         primaryStage.show();
     }
 

@@ -471,9 +471,7 @@ public class TransactionUI extends Application {
             );
         });
 
-        stage.setTitle(
-                "Secure Checkout - Simulation"
-        );
+        stage.setTitle("EventRunner AI Event Management Platform");
         stage.setScene(
                 new Scene(layout, 1366, 768)
         );

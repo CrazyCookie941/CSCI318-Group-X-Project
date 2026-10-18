@@ -104,9 +104,8 @@ public class ChatbotUI extends Application {
         BorderPane.setAlignment(content, Pos.TOP_CENTER);
 
         stage.setTitle("AI Event Assistant");
-        stage.setScene(new Scene(root, 1000, 700));
-        stage.setMinWidth(650);
-        stage.setMinHeight(500);
+        stage.setScene(new Scene(root, 1366, 768));
+        stage.setResizable(false);
         stage.show();
 
         CompletableFuture.supplyAsync(ChatApiClient::getStatus)
