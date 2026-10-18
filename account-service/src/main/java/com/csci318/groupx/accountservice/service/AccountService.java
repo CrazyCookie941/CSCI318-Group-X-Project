@@ -6,7 +6,9 @@ import com.csci318.groupx.accountservice.infrastructure.repository.AccountReposi
 import com.csci318.groupx.accountservice.messaging.AccountEventPublisher;
 import com.csci318.groupx.accountservice.presentation.dto.AccountProfileResponse;
 import com.csci318.groupx.accountservice.presentation.dto.AuthResponse;
+import com.csci318.groupx.accountservice.presentation.dto.ChangePasswordRequest;
 import com.csci318.groupx.accountservice.presentation.dto.LoginRequest;
+import com.csci318.groupx.accountservice.presentation.dto.PasswordChangeResponse;
 import com.csci318.groupx.accountservice.presentation.dto.SignupRequest;
 import com.csci318.groupx.accountservice.presentation.dto.UpdateAccountRequest;
 
@@ -558,6 +560,57 @@ public class AccountService {
     // ===========================
     // Delete Account
     // ===========================
+
+    public PasswordChangeResponse changePassword(
+            Long accountId,
+            ChangePasswordRequest request
+    ) {
+        if (accountId == null
+                || request == null
+                || isBlank(request.getCurrentPassword())
+                || isBlank(request.getNewPassword())) {
+            databaseLogService.warn(
+                    "PASSWORD_CHANGE_FAILED",
+                    accountId,
+                    "Password change rejected because required fields were missing."
+            );
+            return new PasswordChangeResponse(
+                    false,
+                    "Current password and new password are required."
+            );
+        }
+
+        Optional<Account> accountOptional = accountRepository.findById(accountId);
+        if (accountOptional.isEmpty()) {
+            databaseLogService.warn(
+                    "PASSWORD_CHANGE_FAILED",
+                    accountId,
+                    "Password change rejected because the account was not found."
+            );
+            return new PasswordChangeResponse(false, "Account not found.");
+        }
+
+        Account account = accountOptional.get();
+        if (!passwordHasher.matches(
+                request.getCurrentPassword(),
+                account.getPasswordHash())) {
+            databaseLogService.warn(
+                    "PASSWORD_CHANGE_FAILED",
+                    accountId,
+                    "Password change rejected because the current password was incorrect."
+            );
+            return new PasswordChangeResponse(false, "Current password is incorrect.");
+        }
+
+        account.setPasswordHash(passwordHasher.hash(request.getNewPassword()));
+        accountRepository.save(account);
+        databaseLogService.info(
+                "PASSWORD_CHANGED",
+                accountId,
+                "Account password changed successfully."
+        );
+        return new PasswordChangeResponse(true, "Password changed successfully.");
+    }
 
     public AccountDeletionResult deleteAccount(Long accountId, String password) {
         if (accountId == null || isBlank(password)) {

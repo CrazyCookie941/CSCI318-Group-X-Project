@@ -179,6 +179,9 @@ public class AccountUI extends Application
 
         Button btnChangePassword =
                 new Button("Change...");
+        btnChangePassword.setOnAction(event ->
+                changeCurrentPassword(btnChangePassword, accountId)
+        );
 
         btnChangePassword.setStyle(
                 "-fx-background-color: transparent; " +
@@ -624,6 +627,112 @@ public class AccountUI extends Application
         );
     }
 
+    private void changeCurrentPassword(Button changeButton, Long accountId) {
+        if (!CurrentUserSession.isLoggedIn()
+                || !accountId.equals(CurrentUserSession.getAccountId())) {
+            showAlert(Alert.AlertType.WARNING, "Please sign in again.");
+            return;
+        }
+
+        Dialog<String[]> dialog = new Dialog<>();
+        dialog.setTitle("Change password");
+        dialog.setHeaderText("Enter your current password and choose a new one.");
+
+        PasswordField currentPassword = new PasswordField();
+        currentPassword.setPromptText("Current password");
+        PasswordField newPassword = new PasswordField();
+        newPassword.setPromptText("New password");
+        PasswordField confirmPassword = new PasswordField();
+        confirmPassword.setPromptText("Confirm new password");
+        GridPane fields = new GridPane();
+        fields.setHgap(12);
+        fields.setVgap(10);
+        fields.addRow(0, new Label("Current password:"), currentPassword);
+        fields.addRow(1, new Label("New password:"), newPassword);
+        fields.addRow(2, new Label("Confirm new password:"), confirmPassword);
+        dialog.getDialogPane().setContent(fields);
+
+        ButtonType changeAction = new ButtonType(
+                "Change password",
+                ButtonBar.ButtonData.OK_DONE
+        );
+        dialog.getDialogPane().getButtonTypes().addAll(changeAction, ButtonType.CANCEL);
+        dialog.setResultConverter(buttonType -> buttonType == changeAction
+                ? new String[] {
+                        currentPassword.getText(),
+                        newPassword.getText(),
+                        confirmPassword.getText()
+                }
+                : null);
+
+        Optional<String[]> passwords = dialog.showAndWait();
+        if (passwords.isEmpty()) {
+            return;
+        }
+
+        String current = passwords.get()[0];
+        String replacement = passwords.get()[1];
+        if (current.isBlank() || replacement.isBlank() || passwords.get()[2].isBlank()) {
+            showAlert(Alert.AlertType.WARNING, "Please fill in all password fields.");
+            return;
+        }
+        if (!replacement.equals(passwords.get()[2])) {
+            showAlert(Alert.AlertType.WARNING, "The new passwords do not match.");
+            return;
+        }
+        if (replacement.equals(current)) {
+            showAlert(
+                    Alert.AlertType.WARNING,
+                    "Choose a new password that differs from your current password."
+            );
+            return;
+        }
+
+        String body = "{\"currentPassword\":\"" + escapeJson(current)
+                + "\",\"newPassword\":\"" + escapeJson(replacement) + "\"}";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(ACCOUNT_API + accountId + "/password"))
+                .timeout(Duration.ofSeconds(15))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        changeButton.setDisable(true);
+        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .whenComplete((response, error) -> Platform.runLater(() -> {
+                    changeButton.setDisable(false);
+                    if (error != null) {
+                        showAlert(
+                                Alert.AlertType.ERROR,
+                                "Cannot connect to the account service. Your password was not changed."
+                        );
+                        return;
+                    }
+
+                    String message = extractJsonString(response.body(), "message");
+                    if (response.statusCode() == 200) {
+                        showAlert(
+                                Alert.AlertType.INFORMATION,
+                                message == null ? "Password changed successfully." : message
+                        );
+                    } else {
+                        String errorMessage = message;
+                        if (errorMessage == null && response.statusCode() == 404) {
+                            errorMessage =
+                                    "The account service needs to be restarted before passwords can be changed.";
+                        }
+                        showAlert(
+                                response.statusCode() == 403
+                                        ? Alert.AlertType.WARNING
+                                        : Alert.AlertType.ERROR,
+                                errorMessage == null
+                                        ? "Could not change your password. Please try again."
+                                        : errorMessage
+                        );
+                    }
+                }));
+    }
+
     /**
      * Permanently deletes the signed-in account after password confirmation.
      * The backend re-verifies the password before deleting anything.
@@ -884,9 +993,27 @@ public class AccountUI extends Application
 
     private String escapeJson(String value)
     {
-        return value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"");
+        StringBuilder escaped = new StringBuilder();
+        for (int i = 0; i < value.length(); i++) {
+            char character = value.charAt(i);
+            switch (character) {
+                case '"' -> escaped.append("\\\"");
+                case '\\' -> escaped.append("\\\\");
+                case '\b' -> escaped.append("\\b");
+                case '\f' -> escaped.append("\\f");
+                case '\n' -> escaped.append("\\n");
+                case '\r' -> escaped.append("\\r");
+                case '\t' -> escaped.append("\\t");
+                default -> {
+                    if (character < 0x20) {
+                        escaped.append(String.format("\\u%04x", (int) character));
+                    } else {
+                        escaped.append(character);
+                    }
+                }
+            }
+        }
+        return escaped.toString();
     }
 
     private String extractJsonString(

@@ -1,7 +1,9 @@
 package com.csci318.groupx.accountservice.presentation.controller;
 
 import com.csci318.groupx.accountservice.presentation.dto.AccountProfileResponse;
+import com.csci318.groupx.accountservice.presentation.dto.ChangePasswordRequest;
 import com.csci318.groupx.accountservice.presentation.dto.DeleteAccountRequest;
+import com.csci318.groupx.accountservice.presentation.dto.PasswordChangeResponse;
 import com.csci318.groupx.accountservice.presentation.dto.UpdateAccountRequest;
 import com.csci318.groupx.accountservice.service.AccountDeletionResult;
 import com.csci318.groupx.accountservice.service.AccountService;
@@ -56,6 +58,26 @@ public class AccountController {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(response);
+    }
+
+    @PutMapping("/{accountId}/password")
+    public ResponseEntity<PasswordChangeResponse> changePassword(
+            @PathVariable Long accountId,
+            @RequestBody ChangePasswordRequest request
+    ) {
+        PasswordChangeResponse response =
+                accountService.changePassword(accountId, request);
+
+        if (response.success()) {
+            return ResponseEntity.ok(response);
+        }
+        if ("Account not found.".equals(response.message())) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+        if ("Current password is incorrect.".equals(response.message())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+        return ResponseEntity.badRequest().body(response);
     }
 
     @DeleteMapping("/{accountId}")

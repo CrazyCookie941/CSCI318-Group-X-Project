@@ -2,6 +2,7 @@ package com.csci318.groupx.accountservice;
 
 import com.csci318.groupx.accountservice.presentation.dto.AuthResponse;
 import com.csci318.groupx.accountservice.presentation.dto.AccountProfileResponse;
+import com.csci318.groupx.accountservice.presentation.dto.ChangePasswordRequest;
 import com.csci318.groupx.accountservice.presentation.dto.LoginRequest;
 import com.csci318.groupx.accountservice.presentation.dto.SignupRequest;
 import com.csci318.groupx.accountservice.presentation.dto.UpdateAccountRequest;
@@ -83,5 +84,36 @@ class AccountServiceApplicationTests {
         assertEquals("updated_profile_user", reloaded.getUsername());
         assertEquals("updated_profile_user@example.com", reloaded.getEmail());
         assertEquals("Sydney", reloaded.getLocation());
+    }
+
+    @Test
+    void passwordChangeRequiresCurrentPasswordAndUpdatesLoginCredentials() {
+        SignupRequest signup = new SignupRequest();
+        signup.setUsername("password_change_user");
+        signup.setEmail("password_change_user@example.com");
+        signup.setPassword("original_password");
+        AuthResponse created = accountService.signup(signup);
+        assertTrue(created.isSuccess(), created.getMessage());
+
+        ChangePasswordRequest rejectedChange = new ChangePasswordRequest();
+        rejectedChange.setCurrentPassword("incorrect_password");
+        rejectedChange.setNewPassword("replacement_password");
+        assertFalse(accountService.changePassword(
+                created.getAccountId(), rejectedChange).success());
+
+        LoginRequest oldPasswordLogin = new LoginRequest();
+        oldPasswordLogin.setIdentifier("password_change_user");
+        oldPasswordLogin.setPassword("original_password");
+        assertTrue(accountService.login(oldPasswordLogin).isSuccess());
+
+        ChangePasswordRequest validChange = new ChangePasswordRequest();
+        validChange.setCurrentPassword("original_password");
+        validChange.setNewPassword("replacement_password");
+        assertTrue(accountService.changePassword(
+                created.getAccountId(), validChange).success());
+
+        assertFalse(accountService.login(oldPasswordLogin).isSuccess());
+        oldPasswordLogin.setPassword("replacement_password");
+        assertTrue(accountService.login(oldPasswordLogin).isSuccess());
     }
 }
