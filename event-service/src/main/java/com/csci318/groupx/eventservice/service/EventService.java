@@ -3,7 +3,9 @@ package com.csci318.groupx.eventservice.service;
 import com.csci318.groupx.eventservice.domain.model.Event;
 import com.csci318.groupx.eventservice.infrastructure.repository.EventRepository;
 import com.csci318.groupx.eventservice.presentation.dto.EventScoreResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
 import java.util.List;
@@ -35,10 +37,15 @@ public class EventService {
     }
 
     public Event createEvent(Event event) {
+        validatePrice(event.getPrice());
+        if (event.getStatus() == null || event.getStatus().isBlank()) {
+            event.setStatus("SCHEDULED");
+        }
         return eventRepository.save(event);
     }
 
     public Event updateEvent(Long id, Event updatedEvent) {
+        validatePrice(updatedEvent.getPrice());
         return eventRepository.findById(id)
                 .map(existingEvent -> {
 
@@ -51,10 +58,26 @@ public class EventService {
                     existingEvent.setPrice(updatedEvent.getPrice());
                     existingEvent.setCapacity(updatedEvent.getCapacity());
                     existingEvent.setRegisteredCount(updatedEvent.getRegisteredCount());
+                    existingEvent.setOwnerId(updatedEvent.getOwnerId());
+                    existingEvent.setImageLocation(updatedEvent.getImageLocation());
+                    existingEvent.setLatitude(updatedEvent.getLatitude());
+                    existingEvent.setLongitude(updatedEvent.getLongitude());
+                    if (updatedEvent.getStatus() != null && !updatedEvent.getStatus().isBlank()) {
+                        existingEvent.setStatus(updatedEvent.getStatus());
+                    }
 
                     return eventRepository.save(existingEvent);
                 })
                 .orElseThrow(() -> new RuntimeException("Event not found"));
+    }
+
+    private static void validatePrice(Double price) {
+        if (price == null || !Double.isFinite(price) || price < 0 || price > 999999.99) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Event price must be between 0 and 999999.99."
+            );
+        }
     }
 
     public void deleteEvent(Long id) {

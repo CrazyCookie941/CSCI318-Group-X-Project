@@ -36,6 +36,18 @@ public class Event {
 
     private Integer registeredCount;
 
+    private Long ownerId;
+
+    @Column(length = 500)
+    private String imageLocation;
+
+    private Double latitude;
+
+    private Double longitude;
+
+    @Column
+    private String status = "SCHEDULED";
+
     public Event() {
     }
 
@@ -134,5 +146,27 @@ public class Event {
 
     public void setRegisteredCount(Integer registeredCount) {
         this.registeredCount = registeredCount;
+    }
+
+    public Long getOwnerId() { return ownerId; }
+
+    public void setOwnerId(Long ownerId) { this.ownerId = ownerId; }
+
+    public String getImageLocation() { return imageLocation; }
+
+    public void setImageLocation(String imageLocation) { this.imageLocation = imageLocation; }
+
+    public Double getLatitude() { return latitude; }
+
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
+
+    public String getStatus() { return status == null || status.isBlank() ? "SCHEDULED" : status; }
+
+    public void setStatus(String status) {
+        this.status = status == null || status.isBlank() ? "SCHEDULED" : status;
     }
 }

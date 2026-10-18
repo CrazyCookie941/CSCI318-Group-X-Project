@@ -2,6 +2,8 @@ package com.csci318.groupx.eventservice.presentation.controller;
 
 import com.csci318.groupx.eventservice.domain.model.Event;
 import com.csci318.groupx.eventservice.presentation.dto.EventScoreResponse;
+import com.csci318.groupx.eventservice.service.EventRegistrationService;
+import com.csci318.groupx.eventservice.service.NotificationDispatchClient;
 import com.csci318.groupx.eventservice.service.EventService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,9 +15,17 @@ import java.util.List;
 public class EventController {
 
     private final EventService eventService;
+    private final EventRegistrationService registrationService;
+    private final NotificationDispatchClient notificationDispatchClient;
 
-    public EventController(EventService eventService) {
+    public EventController(
+            EventService eventService,
+            EventRegistrationService registrationService,
+            NotificationDispatchClient notificationDispatchClient
+    ) {
         this.eventService = eventService;
+        this.registrationService = registrationService;
+        this.notificationDispatchClient = notificationDispatchClient;
     }
 
     @GetMapping
@@ -75,7 +85,9 @@ public class EventController {
 
     @PostMapping
     public Event createEvent(@RequestBody Event event) {
-        return eventService.createEvent(event);
+        Event created = eventService.createEvent(event);
+        notificationDispatchClient.eventCreated(created);
+        return created;
     }
 
     @PutMapping("/{id}")
@@ -84,9 +96,19 @@ public class EventController {
             @RequestBody Event event) {
 
         try {
-            return ResponseEntity.ok(
-                    eventService.updateEvent(id, event)
-            );
+            Event existing = eventService.getEventById(id)
+                    .orElseThrow(() -> new RuntimeException("Event not found"));
+            Event updated = eventService.updateEvent(id, event);
+            String status = updated.getStatus();
+            String previousStatus = existing.getStatus() == null ? "SCHEDULED" : existing.getStatus();
+            if (!status.equalsIgnoreCase(previousStatus)
+                    && List.of("POSTPONED", "CANCELLED", "REFUNDED").contains(status.toUpperCase())) {
+                notificationDispatchClient.eventChanged(
+                        updated,
+                        status.toUpperCase(),
+                        registrationService.getAccountIdsByEventId(id));
+            }
+            return ResponseEntity.ok(updated);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
@@ -99,6 +121,10 @@ public class EventController {
             return ResponseEntity.notFound().build();
         }
 
+        Event event = eventService.getEventById(id).orElseThrow();
+        notificationDispatchClient.eventChanged(
+                event, "CANCELLED", registrationService.getAccountIdsByEventId(id));
+        registrationService.removeForDeletedEvent(id);
         eventService.deleteEvent(id);
         return ResponseEntity.noContent().build();
     }

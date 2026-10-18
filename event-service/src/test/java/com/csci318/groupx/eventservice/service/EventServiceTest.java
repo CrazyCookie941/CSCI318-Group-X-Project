@@ -1,6 +1,7 @@
 package com.csci318.groupx.eventservice.service;
 
 import com.csci318.groupx.eventservice.domain.model.Event;
+import com.csci318.groupx.eventservice.infrastructure.repository.EventRegistrationRepository;
 import com.csci318.groupx.eventservice.infrastructure.repository.EventRepository;
 import com.csci318.groupx.eventservice.presentation.dto.EventScoreResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,12 +9,22 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.datasource.url=jdbc:h2:mem:event_service_test;DB_CLOSE_DELAY=-1",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.h2.console.enabled=false"
+})
 class EventServiceTest {
 
     @Autowired
@@ -21,6 +32,15 @@ class EventServiceTest {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private EventRegistrationService registrationService;
+
+    @Autowired
+    private EventRegistrationRepository registrationRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @BeforeEach
     void setUp() {
@@ -122,6 +142,172 @@ class EventServiceTest {
         assertEquals(
                 "Sydney AI Conference",
                 results.getFirst().getEvent().getName()
+        );
+    }
+
+    @Test
+    void shouldPersistEventCreationUpdatesAndDeletion() {
+        Event event = new Event(
+                "Persistent event",
+                "Initial description",
+                "Community",
+                "Sydney",
+                LocalDateTime.of(2026, 10, 20, 12, 0),
+                null,
+                15.0,
+                100,
+                0
+        );
+
+        Event saved = eventService.createEvent(event);
+        Long id = saved.getId();
+        assertTrue(eventRepository.findById(id).isPresent());
+
+        Event update = new Event(
+                "Updated event",
+                "Updated description",
+                "Workshop",
+                "Wollongong",
+                LocalDateTime.of(2026, 10, 21, 12, 0),
+                null,
+                25.0,
+                150,
+                0
+        );
+        eventService.updateEvent(id, update);
+
+        entityManager.clear();
+        Event reloaded = eventRepository.findById(id).orElseThrow();
+        assertEquals("Updated event", reloaded.getName());
+        assertEquals("Updated description", reloaded.getDescription());
+        assertEquals("Workshop", reloaded.getCategory());
+
+        eventService.deleteEvent(id);
+        entityManager.clear();
+        assertTrue(eventRepository.findById(id).isEmpty());
+    }
+
+    @Test
+    void shouldPersistAndCancelAccountEventRegistrations() {
+        Event event = eventService.createEvent(new Event(
+                "Registration test event",
+                "Test registration persistence",
+                "Community",
+                "Sydney",
+                LocalDateTime.of(2026, 11, 10, 12, 0),
+                null,
+                0.0,
+                20,
+                0
+        ));
+        Long accountId = 9001L;
+
+        var first = registrationService.register(accountId, event.getId());
+        var duplicate = registrationService.register(accountId, event.getId());
+        assertEquals(first.getId(), duplicate.getId());
+        assertEquals(1, registrationRepository.findByAccountId(accountId).size());
+        assertEquals(1, eventRepository.findById(event.getId()).orElseThrow().getRegisteredCount());
+
+        entityManager.clear();
+        var persisted = registrationRepository.findByAccountId(accountId);
+        assertEquals(1, persisted.size());
+
+        registrationService.cancel(persisted.getFirst().getId(), accountId);
+        entityManager.clear();
+        assertTrue(registrationRepository.findByAccountId(accountId).isEmpty());
+        assertEquals(0, eventRepository.findById(event.getId()).orElseThrow().getRegisteredCount());
+    }
+
+    @Test
+    void concurrentRegistrationsCannotExceedEventCapacity() throws Exception {
+        Event event = eventService.createEvent(new Event(
+                "Capacity race test",
+                "Concurrent registration test",
+                "Community",
+                "Sydney",
+                LocalDateTime.of(2026, 11, 11, 12, 0),
+                null,
+                0.0,
+                1,
+                0
+        ));
+        int requestCount = 20;
+        CountDownLatch ready = new CountDownLatch(requestCount);
+        CountDownLatch start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(requestCount)) {
+            var attempts = java.util.stream.IntStream.range(0, requestCount)
+                    .mapToObj(index -> executor.submit(() -> {
+                        ready.countDown();
+                        start.await();
+                        try {
+                            registrationService.register(10000L + index, event.getId());
+                            return true;
+                        } catch (org.springframework.web.server.ResponseStatusException exception) {
+                            if (exception.getStatusCode().value() != 409) {
+                                throw exception;
+                            }
+                            return false;
+                        }
+                    }))
+                    .toList();
+
+            assertTrue(ready.await(10, TimeUnit.SECONDS));
+            start.countDown();
+            long accepted = 0;
+            for (var attempt : attempts) {
+                if (attempt.get(20, TimeUnit.SECONDS)) {
+                    accepted++;
+                }
+            }
+
+            assertEquals(1, accepted);
+            assertEquals(1, registrationRepository.countByEventId(event.getId()));
+            assertEquals(1, eventRepository.findById(event.getId()).orElseThrow().getRegisteredCount());
+        }
+    }
+
+    @Test
+    void missingRegistrationCountUsesPersistedRegistrationsForCapacity() {
+        Event event = eventService.createEvent(new Event(
+                "Null count capacity test",
+                "Registration count starts unknown",
+                "Community",
+                "Sydney",
+                LocalDateTime.of(2026, 11, 12, 12, 0),
+                null,
+                0.0,
+                1,
+                null
+        ));
+
+        registrationService.register(20001L, event.getId());
+        var exception = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> registrationService.register(20002L, event.getId())
+        );
+
+        assertEquals(409, exception.getStatusCode().value());
+        assertEquals(1, registrationRepository.countByEventId(event.getId()));
+        assertEquals(1, eventRepository.findById(event.getId()).orElseThrow().getRegisteredCount());
+    }
+
+    @Test
+    void eventCreationRejectsNegativeTicketPrices() {
+        Event invalidEvent = new Event(
+                "Invalid-price event",
+                "Negative prices cannot be paid",
+                "Community",
+                "Sydney",
+                LocalDateTime.of(2026, 11, 13, 12, 0),
+                null,
+                -1.0,
+                10,
+                0
+        );
+
+        assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> eventService.createEvent(invalidEvent)
         );
     }
 }
