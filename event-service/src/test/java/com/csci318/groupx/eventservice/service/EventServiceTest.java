@@ -11,8 +11,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -212,5 +216,98 @@ class EventServiceTest {
         entityManager.clear();
         assertTrue(registrationRepository.findByAccountId(accountId).isEmpty());
         assertEquals(0, eventRepository.findById(event.getId()).orElseThrow().getRegisteredCount());
+    }
+
+    @Test
+    void concurrentRegistrationsCannotExceedEventCapacity() throws Exception {
+        Event event = eventService.createEvent(new Event(
+                "Capacity race test",
+                "Concurrent registration test",
+                "Community",
+                "Sydney",
+                LocalDateTime.of(2026, 11, 11, 12, 0),
+                null,
+                0.0,
+                1,
+                0
+        ));
+        int requestCount = 20;
+        CountDownLatch ready = new CountDownLatch(requestCount);
+        CountDownLatch start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(requestCount)) {
+            var attempts = java.util.stream.IntStream.range(0, requestCount)
+                    .mapToObj(index -> executor.submit(() -> {
+                        ready.countDown();
+                        start.await();
+                        try {
+                            registrationService.register(10000L + index, event.getId());
+                            return true;
+                        } catch (org.springframework.web.server.ResponseStatusException exception) {
+                            if (exception.getStatusCode().value() != 409) {
+                                throw exception;
+                            }
+                            return false;
+                        }
+                    }))
+                    .toList();
+
+            assertTrue(ready.await(10, TimeUnit.SECONDS));
+            start.countDown();
+            long accepted = 0;
+            for (var attempt : attempts) {
+                if (attempt.get(20, TimeUnit.SECONDS)) {
+                    accepted++;
+                }
+            }
+
+            assertEquals(1, accepted);
+            assertEquals(1, registrationRepository.countByEventId(event.getId()));
+            assertEquals(1, eventRepository.findById(event.getId()).orElseThrow().getRegisteredCount());
+        }
+    }
+
+    @Test
+    void missingRegistrationCountUsesPersistedRegistrationsForCapacity() {
+        Event event = eventService.createEvent(new Event(
+                "Null count capacity test",
+                "Registration count starts unknown",
+                "Community",
+                "Sydney",
+                LocalDateTime.of(2026, 11, 12, 12, 0),
+                null,
+                0.0,
+                1,
+                null
+        ));
+
+        registrationService.register(20001L, event.getId());
+        var exception = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> registrationService.register(20002L, event.getId())
+        );
+
+        assertEquals(409, exception.getStatusCode().value());
+        assertEquals(1, registrationRepository.countByEventId(event.getId()));
+        assertEquals(1, eventRepository.findById(event.getId()).orElseThrow().getRegisteredCount());
+    }
+
+    @Test
+    void eventCreationRejectsNegativeTicketPrices() {
+        Event invalidEvent = new Event(
+                "Invalid-price event",
+                "Negative prices cannot be paid",
+                "Community",
+                "Sydney",
+                LocalDateTime.of(2026, 11, 13, 12, 0),
+                null,
+                -1.0,
+                10,
+                0
+        );
+
+        assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> eventService.createEvent(invalidEvent)
+        );
     }
 }

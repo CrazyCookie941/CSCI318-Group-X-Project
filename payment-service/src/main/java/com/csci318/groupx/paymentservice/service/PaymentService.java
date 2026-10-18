@@ -2,22 +2,17 @@ package com.csci318.groupx.paymentservice.service;
 
 import com.csci318.groupx.paymentservice.api.PaymentRequest;
 import com.csci318.groupx.paymentservice.api.PaymentResponse;
-import com.csci318.groupx.paymentservice.domain.PaymentRecord;
 import com.csci318.groupx.paymentservice.domain.PaymentStatus;
 import com.csci318.groupx.paymentservice.repository.PaymentRepository;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Instant;
-import java.util.Locale;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
 
 @Service
 public class PaymentService {
@@ -26,17 +21,16 @@ public class PaymentService {
             Set.of("VISA", "MASTERCARD", "PAYPAL");
 
     private final PaymentRepository repository;
-    private final EventCatalogClient eventCatalog;
+    private final PaymentProcessor paymentProcessor;
 
     public PaymentService(
             PaymentRepository repository,
-            EventCatalogClient eventCatalog
+            PaymentProcessor paymentProcessor
     ) {
         this.repository = repository;
-        this.eventCatalog = eventCatalog;
+        this.paymentProcessor = paymentProcessor;
     }
 
-    @Transactional
     public PaymentResponse simulate(PaymentRequest request) {
 
         if (request == null
@@ -64,63 +58,16 @@ public class PaymentService {
             );
         }
 
-        // Reuse an existing successful payment.
-        var previousPayment =
-                repository.findFirstByAccountIdAndEventIdAndStatusOrderByIdDesc(
-                        request.accountId(),
-                        request.eventId(),
-                        PaymentStatus.SUCCEEDED
-                );
-
-        if (previousPayment.isPresent()) {
-            return PaymentResponse.from(previousPayment.get());
+        try {
+            return paymentProcessor.process(request, method);
+        } catch (DataIntegrityViolationException exception) {
+            return repository.findFirstByAccountIdAndEventIdAndStatusOrderByIdDesc(
+                            request.accountId(), request.eventId(), PaymentStatus.SUCCEEDED)
+                    .map(PaymentResponse::from)
+                    .orElseThrow(() -> exception);
         }
-
-        // Get the ticket price from Event Service.
-        EventCatalogClient.EventSnapshot event =
-                eventCatalog.requireEvent(request.eventId());
-
-        if (event.price() == null
-                || event.price().signum() < 0
-                || event.price().compareTo(
-                new BigDecimal("999999.99")) > 0) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.UNPROCESSABLE_ENTITY,
-                    "Event has an invalid ticket price."
-            );
-        }
-
-        BigDecimal amount = event.price()
-                .setScale(2, RoundingMode.HALF_UP);
-
-        PaymentStatus status = request.simulateDecline()
-                ? PaymentStatus.DECLINED
-                : PaymentStatus.SUCCEEDED;
-
-        String eventName =
-                event.name() == null || event.name().isBlank()
-                        ? "Event #" + request.eventId()
-                        : event.name();
-
-        PaymentRecord record = new PaymentRecord(
-                request.eventId(),
-                request.accountId(),
-                eventName,
-                amount,
-                "AUD",
-                method,
-                status,
-                UUID.randomUUID().toString(),
-                Instant.now()
-        );
-
-        PaymentRecord saved = repository.save(record);
-
-        return PaymentResponse.from(saved);
     }
 
-    @Transactional(readOnly = true)
     public PaymentResponse getById(Long paymentId) {
 
         return repository.findById(paymentId)
@@ -131,7 +78,6 @@ public class PaymentService {
                 ));
     }
 
-    @Transactional(readOnly = true)
     public List<PaymentResponse> getByAccountId(Long accountId) {
         if (accountId == null || accountId <= 0) {
             throw new ResponseStatusException(

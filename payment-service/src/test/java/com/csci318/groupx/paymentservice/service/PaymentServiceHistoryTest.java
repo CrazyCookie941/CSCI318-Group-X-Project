@@ -20,7 +20,6 @@ class PaymentServiceHistoryTest {
     @Test
     void paymentHistoryReturnsOnlyAccountRecordsInRepositoryOrder() {
         PaymentRepository repository = mock(PaymentRepository.class);
-        EventCatalogClient eventCatalog = mock(EventCatalogClient.class);
         PaymentRecord payment = new PaymentRecord(
                 5L, 12L, "Community concert", new BigDecimal("24.50"),
                 "AUD", "VISA", PaymentStatus.SUCCEEDED, "reference",
@@ -28,7 +27,7 @@ class PaymentServiceHistoryTest {
         when(repository.findByAccountIdOrderByCreatedAtDesc(12L))
                 .thenReturn(List.of(payment));
 
-        PaymentService service = new PaymentService(repository, eventCatalog);
+        PaymentService service = new PaymentService(repository, mock(PaymentProcessor.class));
         var history = service.getByAccountId(12L);
 
         assertEquals(1, history.size());
@@ -41,7 +40,7 @@ class PaymentServiceHistoryTest {
     @Test
     void paymentHistoryRejectsInvalidAccountIds() {
         PaymentService service = new PaymentService(
-                mock(PaymentRepository.class), mock(EventCatalogClient.class));
+                mock(PaymentRepository.class), mock(PaymentProcessor.class));
 
         assertThrows(org.springframework.web.server.ResponseStatusException.class,
                 () -> service.getByAccountId(0L));

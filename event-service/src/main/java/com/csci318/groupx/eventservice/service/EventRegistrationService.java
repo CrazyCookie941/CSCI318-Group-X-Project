@@ -45,19 +45,20 @@ public class EventRegistrationService {
         requireValidId(accountId, "accountId");
         requireValidId(eventId, "eventId");
 
+        Event event = eventRepository.findByIdForUpdate(eventId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Event not found."
+                ));
         var existing = registrationRepository.findByAccountIdAndEventId(accountId, eventId);
         if (existing.isPresent()) {
             return existing.get();
         }
 
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Event not found."
-                ));
-        if (event.getCapacity() != null
-                && event.getRegisteredCount() != null
-                && event.getRegisteredCount() >= event.getCapacity()) {
+        int registeredCount = event.getRegisteredCount() == null
+                ? Math.toIntExact(registrationRepository.countByEventId(eventId))
+                : event.getRegisteredCount();
+        if (event.getCapacity() != null && registeredCount >= event.getCapacity()) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "This event has reached capacity."
@@ -74,10 +75,8 @@ public class EventRegistrationService {
         EventRegistration saved = registrationRepository.save(
                 new EventRegistration(accountId, eventId)
         );
-        if (event.getRegisteredCount() != null) {
-            event.setRegisteredCount(event.getRegisteredCount() + 1);
-            eventRepository.save(event);
-        }
+        event.setRegisteredCount(registeredCount + 1);
+        eventRepository.save(event);
         return saved;
     }
 

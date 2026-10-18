@@ -1,6 +1,7 @@
 package com.csci318.groupx.paymentservice.domain;
 
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -45,6 +46,9 @@ public class PaymentRecord {
     @Column(nullable = false)
     private Instant createdAt;
 
+    @Column(name = "successful_payment_key", unique = true, length = 64)
+    private String successfulPaymentKey;
+
     protected PaymentRecord() {
     }
 
@@ -68,6 +72,10 @@ public class PaymentRecord {
         this.status = status;
         this.reference = reference;
         this.createdAt = createdAt;
+    }
+
+    public void setSuccessfulPaymentKey(String successfulPaymentKey) {
+        this.successfulPaymentKey = successfulPaymentKey;
     }
 
     public Long getId() {
