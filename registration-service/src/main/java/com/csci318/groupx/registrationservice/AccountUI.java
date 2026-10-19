@@ -6,14 +6,23 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.scene.shape.Circle;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -530,7 +539,7 @@ public class AccountUI extends Application
                         "-fx-text-fill: #666666;"
         );
 
-        VBox avatarBox = new VBox();
+        StackPane avatarBox = new StackPane();
 
         avatarBox.setPrefSize(
                 140,
@@ -560,9 +569,13 @@ public class AccountUI extends Application
                         "-fx-text-fill: #aaaaaa;"
         );
 
-        avatarBox.getChildren().add(
-                lblAvatarPlaceholder
-        );
+        ImageView avatarImage = new ImageView();
+        avatarImage.setFitWidth(140);
+        avatarImage.setFitHeight(140);
+        avatarImage.setPreserveRatio(false);
+        avatarImage.setClip(new Circle(70, 70, 70));
+        avatarImage.setVisible(false);
+        avatarBox.getChildren().addAll(lblAvatarPlaceholder, avatarImage);
 
         Button btnUploadAvatar =
                 new Button("Upload photo");
@@ -575,6 +588,10 @@ public class AccountUI extends Application
                         "-fx-padding: 6 14 6 14; " +
                         "-fx-font-size: 12px; " +
                         "-fx-cursor: hand;"
+        );
+        btnUploadAvatar.setOnAction(event ->
+                uploadProfilePicture(stage, accountId, btnUploadAvatar,
+                        avatarImage, lblAvatarPlaceholder)
         );
 
         rightColumn.getChildren().addAll(
@@ -607,6 +624,96 @@ public class AccountUI extends Application
                 emailField,
                 locationField
         );
+        loadProfilePicture(accountId, avatarImage, lblAvatarPlaceholder);
+    }
+
+    private void loadProfilePicture(
+            Long accountId, ImageView avatarImage, Label placeholder
+    ) {
+        AccountApiClient.profilePicture(accountId).whenComplete((picture, error) ->
+                Platform.runLater(() -> {
+                    if (error == null && picture != null) {
+                        showProfilePicture(picture, avatarImage, placeholder);
+                    }
+                }));
+    }
+
+    private void uploadProfilePicture(
+            Stage stage,
+            Long accountId,
+            Button uploadButton,
+            ImageView avatarImage,
+            Label placeholder
+    ) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Choose a profile picture");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                "Images (PNG, JPEG, GIF)", "*.png", "*.jpg", "*.jpeg", "*.gif"));
+        File selectedFile = chooser.showOpenDialog(stage);
+        if (selectedFile == null) {
+            return;
+        }
+
+        String contentType = profilePictureContentType(selectedFile);
+        if (contentType == null) {
+            showAlert(Alert.AlertType.WARNING, "Choose a PNG, JPEG, or GIF image.");
+            return;
+        }
+
+        try {
+            long size = Files.size(selectedFile.toPath());
+            if (size == 0 || size > 5L * 1024 * 1024) {
+                showAlert(Alert.AlertType.WARNING, "Choose an image no larger than 5 MB.");
+                return;
+            }
+
+            byte[] picture = Files.readAllBytes(selectedFile.toPath());
+            Image image = new Image(new ByteArrayInputStream(picture));
+            if (image.isError()) {
+                showAlert(Alert.AlertType.WARNING, "The selected file is not a valid image.");
+                return;
+            }
+
+            uploadButton.setDisable(true);
+            AccountApiClient.updateProfilePicture(accountId, picture, contentType)
+                    .whenComplete((result, error) -> Platform.runLater(() -> {
+                        uploadButton.setDisable(false);
+                        if (error != null) {
+                            showAlert(Alert.AlertType.ERROR,
+                                    "Could not upload the profile picture. Please try again.");
+                            return;
+                        }
+                        showProfilePicture(picture, avatarImage, placeholder);
+                    }));
+        } catch (IOException exception) {
+            showAlert(Alert.AlertType.ERROR, "Could not read the selected image.");
+        }
+    }
+
+    private void showProfilePicture(
+            byte[] picture, ImageView avatarImage, Label placeholder
+    ) {
+        Image image = new Image(new ByteArrayInputStream(picture));
+        if (image.isError()) {
+            return;
+        }
+        avatarImage.setImage(image);
+        avatarImage.setVisible(true);
+        placeholder.setVisible(false);
+    }
+
+    private String profilePictureContentType(File file) {
+        String fileName = file.getName().toLowerCase(Locale.ROOT);
+        if (fileName.endsWith(".png")) {
+            return "image/png";
+        }
+        if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        if (fileName.endsWith(".gif")) {
+            return "image/gif";
+        }
+        return null;
     }
 
     private void changeCurrentPassword(Button changeButton, Long accountId) {

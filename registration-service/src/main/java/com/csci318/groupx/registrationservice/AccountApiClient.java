@@ -29,6 +29,25 @@ final class AccountApiClient {
                 .body(Profile.class));
     }
 
+    static CompletableFuture<byte[]> profilePicture(long accountId) {
+        return CompletableFuture.supplyAsync(() -> CLIENT.get()
+                .uri("/api/accounts/{accountId}/profile-picture", accountId)
+                .retrieve()
+                .onStatus(status -> status.value() == 404, (request, response) -> {})
+                .body(byte[].class));
+    }
+
+    static CompletableFuture<Void> updateProfilePicture(
+            long accountId, byte[] picture, String contentType
+    ) {
+        return CompletableFuture.runAsync(() -> CLIENT.put()
+                .uri("/api/accounts/{accountId}/profile-picture", accountId)
+                .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
+                .body(picture)
+                .retrieve()
+                .toBodilessEntity());
+    }
+
     record Profile(
             boolean success,
             String message,

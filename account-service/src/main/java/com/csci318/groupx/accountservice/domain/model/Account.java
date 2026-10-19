@@ -21,6 +21,13 @@ public class Account {
 
     private String location;
 
+    @Lob
+    @Column(name = "profile_picture")
+    private byte[] profilePicture;
+
+    @Column(name = "profile_picture_content_type", length = 32)
+    private String profilePictureContentType;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role", length = 20)
     private AccountRole role = AccountRole.GOER;
@@ -72,6 +79,22 @@ public class Account {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public byte[] getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(byte[] profilePicture) {
+        this.profilePicture = profilePicture;
+    }
+
+    public String getProfilePictureContentType() {
+        return profilePictureContentType;
+    }
+
+    public void setProfilePictureContentType(String profilePictureContentType) {
+        this.profilePictureContentType = profilePictureContentType;
     }
 
     public AccountRole getRole() {

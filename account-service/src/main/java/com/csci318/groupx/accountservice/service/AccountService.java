@@ -19,6 +19,12 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.client.RestClient;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
@@ -26,6 +32,9 @@ import java.util.Optional;
 
 @Service
 public class AccountService {
+
+    private static final int MAX_PROFILE_PICTURE_BYTES = 5 * 1024 * 1024;
+    private static final int MAX_PROFILE_PICTURE_DIMENSION = 4096;
 
     private static final Logger logger =
             LoggerFactory.getLogger(AccountService.class);
@@ -386,6 +395,97 @@ public class AccountService {
                 account.getEmail(),
                 account.getLocation()
         );
+    }
+
+    public Optional<Account> getAccountWithProfilePicture(Long accountId) {
+        if (accountId == null) {
+            return Optional.empty();
+        }
+        return accountRepository.findById(accountId)
+                .filter(account -> account.getProfilePicture() != null);
+    }
+
+    public boolean updateAccountProfilePicture(
+            Long accountId, byte[] picture, String contentType
+    ) {
+        if (accountId == null) {
+            throw new IllegalArgumentException("Invalid account ID.");
+        }
+        validateProfilePicture(picture, contentType);
+
+        Optional<Account> accountOptional = accountRepository.findById(accountId);
+        if (accountOptional.isEmpty()) {
+            return false;
+        }
+
+        Account account = accountOptional.get();
+        account.setProfilePicture(picture);
+        account.setProfilePictureContentType(contentType.toLowerCase(Locale.ROOT));
+        accountRepository.save(account);
+        databaseLogService.info(
+                "ACCOUNT_PROFILE_PICTURE_UPDATED",
+                accountId,
+                "Account profile picture updated successfully."
+        );
+        return true;
+    }
+
+    private void validateProfilePicture(byte[] picture, String contentType) {
+        if (picture == null || picture.length == 0
+                || picture.length > MAX_PROFILE_PICTURE_BYTES) {
+            throw new IllegalArgumentException(
+                    "Choose an image no larger than 5 MB."
+            );
+        }
+
+        String normalizedContentType = contentType == null
+                ? ""
+                : contentType.toLowerCase(Locale.ROOT);
+        if (!List.of("image/png", "image/jpeg", "image/gif")
+                .contains(normalizedContentType)) {
+            throw new IllegalArgumentException(
+                    "Only PNG, JPEG, and GIF images are supported."
+            );
+        }
+
+        try (ImageInputStream imageInput = ImageIO.createImageInputStream(
+                new ByteArrayInputStream(picture))) {
+            if (imageInput == null) {
+                throw new IllegalArgumentException("The selected file is not a valid image.");
+            }
+
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(imageInput);
+            if (!readers.hasNext()) {
+                throw new IllegalArgumentException("The selected file is not a valid image.");
+            }
+
+            ImageReader reader = readers.next();
+            try {
+                reader.setInput(imageInput, true, true);
+                String format = reader.getFormatName().toLowerCase(Locale.ROOT);
+                boolean matchesContentType = switch (normalizedContentType) {
+                    case "image/png" -> format.equals("png");
+                    case "image/jpeg" -> format.equals("jpeg") || format.equals("jpg");
+                    case "image/gif" -> format.equals("gif");
+                    default -> false;
+                };
+                int width = reader.getWidth(0);
+                int height = reader.getHeight(0);
+                if (!matchesContentType
+                        || width <= 0 || height <= 0
+                        || width > MAX_PROFILE_PICTURE_DIMENSION
+                        || height > MAX_PROFILE_PICTURE_DIMENSION) {
+                    throw new IllegalArgumentException(
+                            "Choose a valid PNG, JPEG, or GIF image no larger than 4096 by 4096 pixels."
+                    );
+                }
+                reader.read(0);
+            } finally {
+                reader.dispose();
+            }
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("The selected file is not a valid image.", exception);
+        }
     }
 
     // ===========================

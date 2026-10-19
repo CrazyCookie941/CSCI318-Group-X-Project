@@ -1,5 +1,6 @@
 package com.csci318.groupx.accountservice.presentation.controller;
 
+import com.csci318.groupx.accountservice.domain.model.Account;
 import com.csci318.groupx.accountservice.presentation.dto.AccountProfileResponse;
 import com.csci318.groupx.accountservice.presentation.dto.ChangePasswordRequest;
 import com.csci318.groupx.accountservice.presentation.dto.DeleteAccountRequest;
@@ -8,8 +9,12 @@ import com.csci318.groupx.accountservice.presentation.dto.UpdateAccountRequest;
 import com.csci318.groupx.accountservice.service.AccountDeletionResult;
 import com.csci318.groupx.accountservice.service.AccountService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/accounts")
@@ -35,6 +40,40 @@ public class AccountController {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(response);
+    }
+
+    @GetMapping("/{accountId}/profile-picture")
+    public ResponseEntity<byte[]> getAccountProfilePicture(
+            @PathVariable Long accountId
+    ) {
+        Optional<Account> account =
+                accountService.getAccountWithProfilePicture(accountId);
+        if (account.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(
+                        account.get().getProfilePictureContentType()))
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(account.get().getProfilePicture());
+    }
+
+    @PutMapping("/{accountId}/profile-picture")
+    public ResponseEntity<Void> updateAccountProfilePicture(
+            @PathVariable Long accountId,
+            @RequestHeader(HttpHeaders.CONTENT_TYPE) String contentType,
+            @RequestBody byte[] picture
+    ) {
+        try {
+            if (!accountService.updateAccountProfilePicture(
+                    accountId, picture, contentType)) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PutMapping("/{accountId}")

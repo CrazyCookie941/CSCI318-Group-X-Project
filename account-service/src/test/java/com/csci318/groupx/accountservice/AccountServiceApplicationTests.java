@@ -14,6 +14,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(
@@ -84,6 +88,29 @@ class AccountServiceApplicationTests {
         assertEquals("updated_profile_user", reloaded.getUsername());
         assertEquals("updated_profile_user@example.com", reloaded.getEmail());
         assertEquals("Sydney", reloaded.getLocation());
+    }
+
+    @Test
+    void profilePicturesArePersistedToTheDatabase() throws Exception {
+        SignupRequest signup = new SignupRequest();
+        signup.setUsername("profile_picture_user");
+        signup.setEmail("profile_picture_user@example.com");
+        signup.setPassword("test_password_123");
+        AuthResponse created = accountService.signup(signup);
+        assertTrue(created.isSuccess(), created.getMessage());
+
+        BufferedImage source = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        assertTrue(ImageIO.write(source, "png", output));
+        byte[] picture = output.toByteArray();
+
+        assertTrue(accountService.updateAccountProfilePicture(
+                created.getAccountId(), picture, "image/png"));
+
+        entityManager.clear();
+        var reloaded = accountRepository.findById(created.getAccountId()).orElseThrow();
+        assertArrayEquals(picture, reloaded.getProfilePicture());
+        assertEquals("image/png", reloaded.getProfilePictureContentType());
     }
 
     @Test

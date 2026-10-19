@@ -12,20 +12,26 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.math.RoundingMode;
-import java.net.URL;
+import java.nio.file.Files;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 // Displays expandable account and application settings sections.
@@ -100,7 +106,16 @@ public class SettingsUI extends Application
         location.setMaxWidth(420);
 
         Button save = new Button("Save account details");
+        Button choosePicture = new Button("Upload profile picture");
         Label status = blackLabel("");
+        Label pictureStatus = blackLabel("");
+        ImageView picturePreview = new ImageView();
+        picturePreview.setFitWidth(96);
+        picturePreview.setFitHeight(96);
+        picturePreview.setPreserveRatio(true);
+        picturePreview.setStyle("-fx-background-color: #e5e5e5;");
+        HBox pictureControls = new HBox(12, picturePreview, choosePicture);
+        pictureControls.setAlignment(Pos.CENTER_LEFT);
         GridPane fields = new GridPane();
         fields.setHgap(12);
         fields.setVgap(10);
@@ -110,7 +125,7 @@ public class SettingsUI extends Application
         fields.addRow(0, usernameLabel, username);
         fields.addRow(1, emailLabel, email);
         fields.addRow(2, locationLabel, location);
-        VBox controls = new VBox(10, fields, save, status);
+        VBox controls = new VBox(10, fields, pictureControls, pictureStatus, save, status);
 
         Long accountId = CurrentUserSession.getAccountId();
         if (accountId == null) {
@@ -118,11 +133,12 @@ public class SettingsUI extends Application
             email.setDisable(true);
             location.setDisable(true);
             save.setDisable(true);
+            choosePicture.setDisable(true);
             status.setText("Sign in to update account details.");
             return controls;
         }
 
-        setAccountControlsDisabled(username, email, location, save, true);
+        setAccountControlsDisabled(username, email, location, save, choosePicture, true);
         status.setText("Loading account details...");
         AccountApiClient.profile(accountId).whenComplete((profile, error) ->
                 Platform.runLater(() -> {
@@ -133,8 +149,19 @@ public class SettingsUI extends Application
                     username.setText(profile.username() == null ? "" : profile.username());
                     email.setText(profile.email() == null ? "" : profile.email());
                     location.setText(profile.location() == null ? "" : profile.location());
-                    setAccountControlsDisabled(username, email, location, save, false);
+                    setAccountControlsDisabled(
+                            username, email, location, save, choosePicture, false);
                     status.setText("");
+
+                    AccountApiClient.profilePicture(accountId).whenComplete(
+                            (picture, pictureError) -> Platform.runLater(() -> {
+                                if (pictureError != null) {
+                                    pictureStatus.setText(
+                                            "Could not load the profile picture.");
+                                } else if (picture != null) {
+                                    showProfilePicture(picturePreview, picture);
+                                }
+                            }));
                 }));
 
         save.setOnAction(event -> {
@@ -149,11 +176,13 @@ public class SettingsUI extends Application
                 status.setText("Enter a valid email address.");
                 return;
             }
-            setAccountControlsDisabled(username, email, location, save, true);
+            setAccountControlsDisabled(
+                    username, email, location, save, choosePicture, true);
             status.setText("Saving account details...");
             AccountApiClient.update(accountId, name, address, area).whenComplete((profile, error) ->
                     Platform.runLater(() -> {
-                        setAccountControlsDisabled(username, email, location, save, false);
+                        setAccountControlsDisabled(
+                                username, email, location, save, choosePicture, false);
                         if (error != null || profile == null || !profile.success()) {
                             status.setText(profile == null
                                     ? "Could not save account details. Please try again."
@@ -167,16 +196,92 @@ public class SettingsUI extends Application
                         status.setText("Account details saved.");
                     }));
         });
+
+        choosePicture.setOnAction(event -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Choose a profile picture");
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                    "Images (PNG, JPEG, GIF)", "*.png", "*.jpg", "*.jpeg", "*.gif"));
+            File selectedFile = chooser.showOpenDialog(
+                    choosePicture.getScene().getWindow());
+            if (selectedFile == null) {
+                return;
+            }
+
+            String contentType = profilePictureContentType(selectedFile);
+            if (contentType == null) {
+                pictureStatus.setText("Choose a PNG, JPEG, or GIF image.");
+                return;
+            }
+
+            try {
+                long size = Files.size(selectedFile.toPath());
+                if (size == 0 || size > 5L * 1024 * 1024) {
+                    pictureStatus.setText("Choose an image no larger than 5 MB.");
+                    return;
+                }
+                byte[] picture = Files.readAllBytes(selectedFile.toPath());
+                Image image = new Image(new ByteArrayInputStream(picture));
+                if (image.isError()) {
+                    pictureStatus.setText("The selected file is not a valid image.");
+                    return;
+                }
+
+                choosePicture.setDisable(true);
+                pictureStatus.setText("Uploading profile picture...");
+                AccountApiClient.updateProfilePicture(
+                        accountId, picture, contentType).whenComplete((result, uploadError) ->
+                        Platform.runLater(() -> {
+                            choosePicture.setDisable(false);
+                            if (uploadError != null) {
+                                pictureStatus.setText(
+                                        "Could not upload the profile picture. Please try again.");
+                                return;
+                            }
+                            picturePreview.setImage(image);
+                            pictureStatus.setText("Profile picture updated.");
+                        }));
+            } catch (IOException exception) {
+                pictureStatus.setText("Could not read the selected image.");
+            }
+        });
         return controls;
     }
 
     private static void setAccountControlsDisabled(
-            TextField username, TextField email, TextField location, Button save, boolean disabled
+            TextField username,
+            TextField email,
+            TextField location,
+            Button save,
+            Button choosePicture,
+            boolean disabled
     ) {
         username.setDisable(disabled);
         email.setDisable(disabled);
         location.setDisable(disabled);
         save.setDisable(disabled);
+        choosePicture.setDisable(disabled);
+    }
+
+    private static void showProfilePicture(ImageView preview, byte[] picture) {
+        Image image = new Image(new ByteArrayInputStream(picture));
+        if (!image.isError()) {
+            preview.setImage(image);
+        }
+    }
+
+    private static String profilePictureContentType(File file) {
+        String fileName = file.getName().toLowerCase(Locale.ROOT);
+        if (fileName.endsWith(".png")) {
+            return "image/png";
+        }
+        if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        if (fileName.endsWith(".gif")) {
+            return "image/gif";
+        }
+        return null;
     }
 
     private static VBox createFinancialSettingsContent()
