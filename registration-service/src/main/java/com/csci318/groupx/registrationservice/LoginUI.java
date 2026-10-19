@@ -52,10 +52,6 @@ public class LoginUI extends Application {
         message.setWrapText(true);
         message.setStyle("-fx-text-fill: #d00000; -fx-font-size: 13px; -fx-font-weight: bold;");
 
-        // Kept for visual consistency. Persistent 'remember me' is not implemented.
-        CheckBox rememberMe = new CheckBox("Remember me");
-        rememberMe.setStyle("-fx-font-size: 13px; -fx-text-fill: #555555; -fx-cursor: hand;");
-
         Button loginButton = new Button("Sign In");
         loginButton.setPrefHeight(40);
         loginButton.setMaxWidth(Double.MAX_VALUE);
@@ -119,7 +115,6 @@ public class LoginUI extends Application {
                 title,
                 emailField,
                 passwordField,
-                rememberMe,
                 loginButton,
                 links,
                 message
